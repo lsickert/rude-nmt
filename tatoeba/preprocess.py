@@ -1,13 +1,10 @@
-import tarfile
-import gzip
-import shutil
-import io
+"""methods to retrieve and load the tatoeba dataset"""
+import io, re, csv, gzip, shutil, tarfile
 from pathlib import Path
 from functools import partial
-import csv
 import requests
 from tqdm import tqdm
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 
 
 TATOEBA_TAR = "https://object.pouta.csc.fi/Tatoeba-Challenge-v2021-08-07/deu-kor.tar"
@@ -91,7 +88,35 @@ def get_dataset():
         },
     )
 
-    return dataset
+    # some entries in the dataset include a segmentation fault and consist only of the error message in one of the languages
+    clean_data = dataset.filter(
+        lambda ex: ex["source"] is not None and ex["target"] is not None, num_proc=8
+    )
+
+    return clean_data
+
+def get_subtitle_dataset(force_renew: bool = False):
+    """get the subset with subtitle data from the train-split of the tatoeba-dataset"""
+
+    subtitle_folder = DATA_FOLDER / "subtitles"
+
+    if force_renew or not subtitle_folder.exists():
+
+        if force_renew:
+            shutil.rmtree(subtitle_folder)
+
+        subsets = ("OpenSubtitles-v2018","TED2020-v1")
+
+        dataset = get_dataset()["train"]
+
+        subtitle_set = dataset.filter(lambda ex: ex["id"].startswith(subsets), num_proc=8)
+
+        subtitle_set.save_to_disk(subtitle_folder)
+    
+    else:
+        subtitle_set = load_from_disk(subtitle_folder)
+
+    return subtitle_set
 
 
 def _download_file(url: str, force_redownload: bool = False) -> Path:
