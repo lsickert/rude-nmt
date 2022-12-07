@@ -95,6 +95,7 @@ def get_dataset():
 
     return clean_data
 
+
 def get_subtitle_dataset(force_renew: bool = False):
     """get the subset with subtitle data from the train-split of the tatoeba-dataset"""
 
@@ -102,21 +103,44 @@ def get_subtitle_dataset(force_renew: bool = False):
 
     if force_renew or not subtitle_folder.exists():
 
-        if force_renew:
+        if force_renew and subtitle_folder.exists():
             shutil.rmtree(subtitle_folder)
 
-        subsets = ("OpenSubtitles-v2018","TED2020-v1")
+        subsets = ("OpenSubtitles-v2018", "TED2020-v1")
 
         dataset = get_dataset()["train"]
 
-        subtitle_set = dataset.filter(lambda ex: ex["id"].startswith(subsets), num_proc=8)
+        subtitle_set = dataset.filter(
+            lambda ex: ex["id"].startswith(subsets), num_proc=8
+        )
+
+        subtitle_set = subtitle_set.map(_clean_examples, num_proc=8)
 
         subtitle_set.save_to_disk(subtitle_folder)
-    
+
     else:
         subtitle_set = load_from_disk(subtitle_folder)
 
     return subtitle_set
+
+
+def _clean_examples(example):
+    example["source"] = example["source"].strip()
+    example["target"] = example["target"].strip()
+
+    if example["source"].startswith("- "):
+        example["source"] = example["source"][2:]
+
+    if example["source"].startswith("-"):
+        example["source"] = example["source"][1:]
+
+    if example["target"].startswith("- "):
+        example["target"] = example["target"][2:]
+
+    if example["target"].startswith("-"):
+        example["target"] = example["target"][1:]
+
+    return example
 
 
 def _download_file(url: str, force_redownload: bool = False) -> Path:
