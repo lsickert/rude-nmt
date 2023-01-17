@@ -1,10 +1,10 @@
 import re
 
 """matches a capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
-FORMAL_RE = re.compile(r"\s(?:Sie|Ihnen|Ihre|Ihren)\b")
+FORMAL_RE = re.compile(r"\s(?:(Sie)|(Ihnen)|(Ihre)|(Ihren))\b")
 
 """matches an inflection of `du`."""
-INFORMAL_RE = re.compile(r"\b[Dd](?:u|ir|ein|eine|einen)\b")
+INFORMAL_RE = re.compile(r"\b[Dd](?:(u)|(ir)|(ein)|(eine)|(einen))\b")
 
 def annotate_formality(example):
     """annotate the formality of a German sentence"""
