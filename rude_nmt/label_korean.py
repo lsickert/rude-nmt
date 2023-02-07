@@ -1,3 +1,4 @@
+"""provides functions to annotate formality for Korean"""
 import re
 from math import floor
 from typing import Optional
@@ -57,8 +58,62 @@ def annotate_formality(example):
 
 
 def is_hasoseoche(example: str) -> bool:
-
+    """check if an example sentence is in hasoseoche formality"""
     match = HASOSEOCHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_hasipsioche(example: str) -> bool:
+    """check if an example sentence is in hasipsioche formality"""
+    match = HASIPSIOCHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_haoche(example: str) -> bool:
+    """check if an example sentence is in haoche formality"""
+    match = HAOCHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_hageche(example: str) -> bool:
+    """check if an example sentence is in hageche formality"""
+    match = HAGECHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_haerache(example: str) -> bool:
+    """check if an example sentence is in haerache formality"""
+    match = HAERACHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_haeyoche(example: str) -> bool:
+    """check if an example sentence is in haeyoche formality"""
+    match = HAEYOCHE_RE.search(example)
+    if match is not None:
+        return True
+
+    return False
+
+
+def is_haeche(example: str) -> bool:
+    """check if an example sentence is in haeche formality"""
+    match = HAECHE_RE.search(example)
     if match is not None:
         return True
 
@@ -81,4 +136,5 @@ def separate_syllable(char: str) -> Optional[tuple]:
 
 
 def is_hangul(char: str) -> bool:
+    """check if a character is within the unicode range for hangul characters"""
     return U_HAN_START <= ord(char) <= U_HAN_END

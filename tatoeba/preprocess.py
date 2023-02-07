@@ -1,5 +1,9 @@
 """methods to retrieve and load the tatoeba dataset"""
-import io, re, csv, gzip, shutil, tarfile
+import io
+import csv
+import gzip
+import shutil
+import tarfile
 from pathlib import Path
 from functools import partial
 import requests
@@ -88,7 +92,8 @@ def get_dataset():
         },
     )
 
-    # some entries in the dataset include a segmentation fault and consist only of the error message in one of the languages
+    # some entries in the dataset include a segmentation fault
+    # and consist only of the error message in one of the languages
     clean_data = dataset.filter(
         lambda ex: ex["source"] is not None and ex["target"] is not None, num_proc=8
     )
@@ -149,7 +154,7 @@ def _download_file(url: str, force_redownload: bool = False) -> Path:
     fpath = DATA_FOLDER / fname
 
     if not fpath.exists() or force_redownload:
-        with requests.get(url, stream=True) as res:
+        with requests.get(url, stream=True, timeout=5) as res:
             if res.status_code != 200:
                 res.raise_for_status()
                 raise RuntimeError(f"{url} returned {res.status_code} status")
