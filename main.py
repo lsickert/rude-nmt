@@ -5,6 +5,8 @@ TATOEBA_TAR = "https://object.pouta.csc.fi/Tatoeba-Challenge-v2021-08-07/deu-kor
 
 if __name__ == "__main__":
 
-    dataset = preprocess.get_dataset()
+    #preprocess.get_tatoeba(TATOEBA_TAR)
+
+    dataset = preprocess.get_subtitle_dataset()
 
     print(dataset)

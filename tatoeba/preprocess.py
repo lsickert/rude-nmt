@@ -174,7 +174,7 @@ def _extract_tar(file: Path):
 
 
 def _extract_file(file) -> str:
-    """extracts a file from dbpedia in gzip format"""
+    """extracts a file in gzip format"""
     fname = file[:-3]
     desc = f"extracting {file}"
     compfile = gzip.open(DATA_FOLDER / file)
