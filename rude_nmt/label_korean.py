@@ -7,14 +7,14 @@ from typing import Optional
 U_HAN_START = 0xAC00
 U_HAN_END = 0xD7A3
 
-"""unicode range containing all valid korean syllable initial consonants as individual characters"""
 KO_JA_INITIALS = [chr(code) for code in range(0x1100, 0x1113)]
+"""unicode range containing all valid korean syllable initial consonants as individual characters"""
 
-"""unicode range containing all valid korean syllable medial vowels as individual characters"""
 KO_JA_MEDIAL = [chr(code) for code in range(0x1161, 0x1176)]
+"""unicode range containing all valid korean syllable medial vowels as individual characters"""
 
-"""unicode range containing all valid korean syllable final consonants as individual characters"""
 KO_JA_FINAL = [chr(code) for code in range(0x11A8, 0x11C3)]
+"""unicode range containing all valid korean syllable final consonants as individual characters"""
 # insert the possibility for no final consonant at the start
 KO_JA_FINAL.insert(0, None)
 
@@ -24,7 +24,7 @@ U_KO_INIT_OFFSET = 588
 U_KO_MED_OFFSET = 28
 
 HASOSEOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>사옵나이다)|(?P<decl2>옵나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<>declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>사옵나이다)|(?P<decl2>옵나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b"
 )
 
 HASIPSIOCHE_RE = re.compile(
@@ -53,6 +53,39 @@ HAECHE_RE = re.compile(
 
 
 def annotate_formality(example):
+    """
+    annotate the formality of a Korean sentence by matching it through a regex
+    based on the endings of the main verb at the end of the sentence.
+    """
+
+    form = None
+
+    if is_hasoseoche(example):
+        form = "hasoseoche" if "form" is None else "ambiguous"
+
+    if is_hasipsioche(example):
+        form = "hasipsioche" if "form" is None else "ambiguous"
+
+    if is_haoche(example):
+        form = "haoche" if "form" is None else "ambiguous"
+
+    if is_hageche(example):
+        form = "hageche" if "form" is None else "ambiguous"
+
+    if is_haerache(example):
+        form = "haerache" if "form" is None else "ambiguous"
+
+    if is_haeyoche(example):
+        form = "hayoche" if "form" is None else "ambiguous"
+
+    if is_haeche(example):
+        form = "haeche" if "form" is None else "ambiguous"
+
+    if form is None:
+        form = "underspecified"
+
+    example["ko_formality"] = form
+
 
     return example
 
@@ -70,7 +103,44 @@ def is_hasipsioche(example: str) -> bool:
     """check if an example sentence is in hasipsioche formality"""
     match = HASIPSIOCHE_RE.search(example)
     if match is not None:
-        return True
+        if match["declInd1"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㅂ":
+                return True
+            else:
+                return False
+        elif match["declInd2"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㄴ":
+                return True
+            else:
+                return False
+        elif match["cert"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㅂ":
+                return True
+            else:
+                return False
+        elif match["intInd"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㅂ":
+                return True
+            else:
+                return False
+        elif match["imp"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㅂ":
+                return True
+            else:
+                return False
+        elif match["req"] is not None:
+            init, med, final = separate_syllable(match["stem"][-1])
+            if final == "ㅂ":
+                return True
+            else:
+                return False
+        else:
+            return True
 
     return False
 

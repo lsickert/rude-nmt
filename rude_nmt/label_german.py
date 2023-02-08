@@ -20,16 +20,18 @@ def annotate_tv_formality(example):
     """
     annotate the formality of a German sentence by matching it through a regex
     based on the existence of the formality indicators of du (informal) and Sie (formal).
-    A value of 0 means no formality information was found, a value of 1 means informal, 2 formal and 3 is ambiguous
     """
 
-    form = 0
+    form = None
 
     if INFORMAL_RE.search(example["source"]) is not None:
-        form += 1
+        form = "informal" if "form" is None else "ambiguous"
 
     if FORMAL_RE.search(example["source"]) is not None:
-        form += 2
+        form = "formal" if "form" is None else "ambiguous"
+
+    if form is None:
+        form = "underspecified"
 
     example["de_formality"] = form
 
