@@ -25,10 +25,10 @@ def annotate_tv_formality(example):
     form = None
 
     if INFORMAL_RE.search(example["source"]) is not None:
-        form = "informal" if "form" is None else "ambiguous"
+        form = "informal" if form is None else "ambiguous"
 
     if FORMAL_RE.search(example["source"]) is not None:
-        form = "formal" if "form" is None else "ambiguous"
+        form = "formal" if form is None else "ambiguous"
 
     if form is None:
         form = "underspecified"
