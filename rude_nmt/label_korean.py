@@ -1,8 +1,8 @@
 """provides functions to annotate formality for Korean"""
 import re
-from jamo import j2hcj
 from math import floor
 from typing import Optional, Tuple
+from jamo import j2hcj
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00
@@ -29,7 +29,7 @@ HASOSEOCHE_RE = re.compile(
 )
 
 HASIPSIOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<cert>지요)|(?P<intInd>니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>십시다)|(?P<prop2>시지요)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<cert>지요|죠)|(?P<intInd>니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>십시다)|(?P<prop2>시지요|시죠)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
 )
 
 HAOCHE_RE = re.compile(
@@ -37,7 +37,7 @@ HAOCHE_RE = re.compile(
 )
 
 HAGECHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decInt1>네)|(?P<decInt2>레)|(?P<decKno>다네)|(?P<decTho>세)|(?P<decCon>니)|(?P<imp>게)|(?P<intInd1>나)|(?P<intInd2>가)|(?P<intUns>런가)|(?P<intDen>쏜가)|(?P<prop2>세나)|(?P<exc2>로세))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decInt1>네)|(?P<decInt2>레)|(?P<decKno>다네)|(?P<decTho>세)|(?P<decCon>니)|(?P<imp>게)|(?P<intInd1>(?<!구)나)|(?P<intInd2>가)|(?P<intUns>런가)|(?P<intDen>쏜가)|(?P<prop2>세나)|(?P<exc2>로세))\b(?!\s\w)"
 )
 
 HAERACHE_RE = re.compile(
@@ -45,11 +45,11 @@ HAERACHE_RE = re.compile(
 )
 
 HAEYOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>요)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>요|죠)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요))\b(?!\s\w)"
 )
 
 HAECHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<declInd1>어)|(?P<declInd2>야)|(?P<declConf1>지)|(?P<declConf2>다지)|(?P<declKno>라지)|(?P<declCaus1>거든)|(?P<declCaus2>거들랑)|(?P<declExp>데)|(?P<declAnsw>고)|(?P<declNoAlt>밖에)|(?P<intInd>까)|(?P<intGues>게)|(?P<intTho>레)|(?P<intExp>려나)|(?P<intOp>거나)|(?P<intConf1>다면서)|(?P<intConf2>라면서)|(?P<excImp>구먼)|(?P<excRes>더라니)|(?P<excAdm1>데라니)|(?P<excAdm2>사)|(?P<excSelf>로고)|(?P<prop>자니까)|(?P<objNeg>세말이지)|(?P<monAsk1>다니)|(?P<monAsk2>라니)|(?P<monAdm>걸)|(?P<monEmph1>다니까)|(?P<monEmph2>라니까)|(?P<monDen1>대)|(?P<monDen2>나))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<declInd1>어)|(?P<declInd2>야)|(?P<declConf1>지)|(?P<declConf2>다지)|(?P<declKno>라지)|(?P<declCaus1>거든)|(?P<declCaus2>거들랑)|(?P<declExp>데)|(?P<declAnsw>고)|(?P<declNoAlt>밖에)|(?P<intInd>까)|(?P<intGues>게)|(?P<intTho>레)|(?P<intExp>려나)|(?P<intOp>거나)|(?P<intConf1>다면서)|(?P<intConf2>라면서)|(?P<excImp>구먼)|(?P<excRes>더라니)|(?P<excAdm1>데라니)|(?P<excAdm2>사)|(?P<excSelf>로고)|(?P<prop>자니까)|(?P<objNeg>세말이지)|(?P<monAsk1>다니)|(?P<monAsk2>라니)|(?P<monAdm>걸)|(?P<monEmph1>다니까)|(?P<monEmph2>라니까)|(?P<monDen1>대)|(?P<monDen2>(?<!구)나))\b(?!\s\w)"
 )
 
 

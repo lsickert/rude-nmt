@@ -80,7 +80,7 @@ def get_tatoeba(url: str, force: bool = False):
         trg_file.close()
 
 
-def get_dataset():
+def get_dataset(force_renew: bool = False):
     """get the processed tatoeba dataset."""
     dataset = load_dataset(
         str(DATA_FOLDER),
@@ -95,7 +95,9 @@ def get_dataset():
     # some entries in the dataset include a segmentation fault
     # and consist only of the error message in one of the languages
     clean_data = dataset.filter(
-        lambda ex: ex["source"] is not None and ex["target"] is not None, num_proc=8
+        lambda ex: ex["source"] is not None and ex["target"] is not None,
+        num_proc=8,
+        load_from_cache_file=force_renew,
     )
 
     return clean_data
@@ -116,10 +118,14 @@ def get_subtitle_dataset(force_renew: bool = False):
         dataset = get_dataset()["train"]
 
         subtitle_set = dataset.filter(
-            lambda ex: ex["id"].startswith(subsets), num_proc=8
+            lambda ex: ex["id"].startswith(subsets),
+            num_proc=8,
+            load_from_cache_file=force_renew,
         )
 
-        subtitle_set = subtitle_set.map(_clean_examples, num_proc=8)
+        subtitle_set = subtitle_set.map(
+            _clean_examples, num_proc=8, load_from_cache_file=force_renew
+        )
 
         subtitle_set.save_to_disk(subtitle_folder)
 
