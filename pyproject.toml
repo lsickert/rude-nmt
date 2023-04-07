@@ -2,18 +2,21 @@
 name = "rude-nmt"
 version = "0.1.0"
 description = ""
-authors = ["Ludwig Sickert <ludwigsickert@gmail.com>"]
+authors = ["Ludwig Sickert <l.sickert@outlook.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "rude_nmt"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8.1,<3.12"
 transformers = "^4.22.2"
 datasets = "^2.5.1"
 pandas = "^1.5.0"
 matplotlib = "^3.6.0"
 jamo = "^0.4.1"
+inseq = "^0.3.3"
+sacremoses = "^0.0.53"
+spacy = {version="^3.5.1", extras=["apple", "ko", "de", "en"]}
 
 
 [tool.poetry.group.dev.dependencies]

@@ -25,7 +25,7 @@ U_KO_INIT_OFFSET = 588
 U_KO_MED_OFFSET = 28
 
 HASOSEOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>사옵나이다)|(?P<decl2>옵나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>나이다)|(?P<decl2>사옵나이다)|(?P<decl3>옵나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b(?!\s\w)"
 )
 
 HASIPSIOCHE_RE = re.compile(
