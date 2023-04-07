@@ -1,6 +1,7 @@
 #### Custom Ignores
 
-/data
+/data/*
+!/data/iwslt2023
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
