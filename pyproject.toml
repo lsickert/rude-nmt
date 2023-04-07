@@ -17,6 +17,7 @@ jamo = "^0.4.1"
 inseq = "^0.3.3"
 sacremoses = "^0.0.53"
 spacy = {version="^3.5.1", extras=["apple", "ko", "de", "en"]}
+torch = "^1.13.1"
 
 
 [tool.poetry.group.dev.dependencies]
