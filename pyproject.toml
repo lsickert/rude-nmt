@@ -9,6 +9,7 @@ packages = [{include = "rude_nmt"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.12"
+
 transformers = "^4.22.2"
 datasets = "^2.5.1"
 pandas = "^1.5.0"
@@ -16,9 +17,11 @@ matplotlib = "^3.6.0"
 jamo = "^0.4.1"
 inseq = "^0.3.3"
 sacremoses = "^0.0.53"
-spacy = {version="^3.5.1", extras=["apple", "transformers", "cuda", "ko", "de", "en"]}
+spacy = {version="^3.5.1", extras=["transformers", "ko", "de", "en"]}
 torch = "^1.13.1"
 
+[tool.poetry.group.dev]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "^3.4.8"
@@ -27,6 +30,18 @@ ipywidgets = "^8.0.4"
 pylint = "^2.15.3"
 pytest = "^7.1.3"
 black = "^22.10.0"
+
+[tool.poetry.group.cuda]
+optional = true
+
+[tool.poetry.group.cuda.dependencies]
+spacy = {version="^3.5.1", extras=["cuda"]}
+
+[tool.poetry.group.apple]
+optional = true
+
+[tool.poetry.group.apple.dependencies]
+spacy = {version="^3.5.1", extras=["apple"]}
 
 [build-system]
 requires = ["poetry-core"]
