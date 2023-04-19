@@ -4,6 +4,7 @@ import csv
 import gzip
 import shutil
 import tarfile
+import os
 from pathlib import Path
 from functools import partial
 import requests
@@ -96,7 +97,7 @@ def get_dataset(force_renew: bool = False):
     # and consist only of the error message in one of the languages
     clean_data = dataset.filter(
         lambda ex: ex["source"] is not None and ex["target"] is not None,
-        num_proc=8,
+        num_proc=os.cpu_count(),
         load_from_cache_file=force_renew,
     )
 
@@ -119,12 +120,12 @@ def get_subtitle_dataset(force_renew: bool = False):
 
         subtitle_set = dataset.filter(
             lambda ex: ex["id"].startswith(subsets),
-            num_proc=8,
+            num_proc=os.cpu_count(),
             load_from_cache_file=force_renew,
         )
 
         subtitle_set = subtitle_set.map(
-            _clean_examples, num_proc=8, load_from_cache_file=force_renew
+            _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=force_renew
         )
 
         subtitle_set.save_to_disk(subtitle_folder)
