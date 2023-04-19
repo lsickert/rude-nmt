@@ -3,7 +3,7 @@ import re
 from typing import Optional
 from datasets import Dataset
 
-from tatoeba import preprocess
+from . import preprocess
 
 
 def get_one_word_sentences(
