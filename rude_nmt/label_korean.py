@@ -2,7 +2,11 @@
 import re
 from math import floor
 from typing import Optional, Tuple
+import spacy
 from jamo import j2hcj
+
+spacy.prefer_gpu()
+nlp = spacy.load("ko_core_news_lg", disable=["parser"])
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00
@@ -207,7 +211,11 @@ def is_haerache(sent: str) -> bool:
     if match is not None:
         if match["decInd"] is not None:
             chars = separate_syllable(match["stem"][-1])
-            if chars is not None and chars[2] is not None and (j2hcj(chars[2]) == "ㄴ" or j2hcj(chars[2]) == "ㅆ"):
+            if (
+                chars is not None
+                and chars[2] is not None
+                and (j2hcj(chars[2]) == "ㄴ" or j2hcj(chars[2]) == "ㅆ")
+            ):
                 return True
             else:
                 return False
@@ -331,3 +339,17 @@ def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:
 def is_hangul(char: str) -> bool:
     """check if a character is within the unicode range for hangul characters"""
     return U_HAN_START <= ord(char) <= U_HAN_END
+
+
+def get_pos_tags(examples):
+    """get the POS tags of a Korean sentence"""
+    examples["ko_upos_tags"] = []
+    examples["ko_pos_tags"] = []
+    examples["ko_ws_tokens"] = []
+
+    for doc in nlp.pipe(examples["target"]):
+        examples["ko_upos_tags"].append([token.pos_ for token in doc])
+        examples["ko_pos_tags"].append([token.tag_ for token in doc])
+        examples["ko_ws_tokens"].append([token.text for token in doc])
+
+    return examples
