@@ -4,6 +4,7 @@ import csv
 import gzip
 import shutil
 import tarfile
+import os
 from pathlib import Path
 from functools import partial
 import requests
@@ -38,49 +39,50 @@ def get_tatoeba(url: str, force: bool = False):
     for split in split_list:
         out_file = DATA_FOLDER / f"deu-kor.{split}.csv"
 
-        id_file = open(
-            DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.id",
-            "r",
-            encoding="utf-8",
-        )
+        if not out_file.exists() or force:
+            id_file = open(
+                DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.id",
+                "r",
+                encoding="utf-8",
+            )
 
-        num_lines = _get_file_lines(id_file)
+            num_lines = _get_file_lines(id_file)
 
-        src_file = open(
-            DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.src",
-            "r",
-            encoding="utf-8",
-        )
-        trg_file = open(
-            DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.trg",
-            "r",
-            encoding="utf-8",
-        )
+            src_file = open(
+                DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.src",
+                "r",
+                encoding="utf-8",
+            )
+            trg_file = open(
+                DATA_FOLDER / f"release/v2021-08-07/deu-kor/{split}.trg",
+                "r",
+                encoding="utf-8",
+            )
 
-        desc = f"generating {split} split as csv"
+            desc = f"generating {split} split as csv"
 
-        with tqdm(total=num_lines, desc=desc) as pbar:
-            with open(out_file, "w", encoding="utf-8", newline="") as out:
-                out_writer = csv.writer(out)
-                out_writer.writerow(["id", "source", "target"])
+            with tqdm(total=num_lines, desc=desc) as pbar:
+                with open(out_file, "w", encoding="utf-8", newline="") as out:
+                    out_writer = csv.writer(out)
+                    out_writer.writerow(["id", "source", "target"])
 
-                while True:
-                    idx = id_file.readline().strip()
-                    src = src_file.readline().strip()
-                    trg = trg_file.readline().strip()
+                    while True:
+                        idx = id_file.readline().strip()
+                        src = src_file.readline().strip()
+                        trg = trg_file.readline().strip()
 
-                    if not idx:
-                        break
+                        if not idx:
+                            break
 
-                    out_writer.writerow([idx, src, trg])
-                    pbar.update()
+                        out_writer.writerow([idx, src, trg])
+                        pbar.update()
 
-        id_file.close()
-        src_file.close()
-        trg_file.close()
+            id_file.close()
+            src_file.close()
+            trg_file.close()
 
 
-def get_dataset():
+def get_dataset(force_renew: bool = False):
     """get the processed tatoeba dataset."""
     dataset = load_dataset(
         str(DATA_FOLDER),
@@ -95,7 +97,9 @@ def get_dataset():
     # some entries in the dataset include a segmentation fault
     # and consist only of the error message in one of the languages
     clean_data = dataset.filter(
-        lambda ex: ex["source"] is not None and ex["target"] is not None, num_proc=8
+        lambda ex: ex["source"] is not None and ex["target"] is not None,
+        num_proc=os.cpu_count(),
+        load_from_cache_file=force_renew,
     )
 
     return clean_data
@@ -113,13 +117,17 @@ def get_subtitle_dataset(force_renew: bool = False):
 
         subsets = ("OpenSubtitles-v2018", "TED2020-v1")
 
-        dataset = get_dataset()["train"]
+        dataset = get_dataset(force_renew)["train"]
 
         subtitle_set = dataset.filter(
-            lambda ex: ex["id"].startswith(subsets), num_proc=8
+            lambda ex: ex["id"].startswith(subsets),
+            num_proc=os.cpu_count(),
+            load_from_cache_file=force_renew,
         )
 
-        subtitle_set = subtitle_set.map(_clean_examples, num_proc=8)
+        subtitle_set = subtitle_set.map(
+            _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=force_renew
+        )
 
         subtitle_set.save_to_disk(subtitle_folder)
 
