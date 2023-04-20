@@ -6,7 +6,7 @@ import spacy
 from jamo import j2hcj
 
 spacy.prefer_gpu()
-nlp = spacy.load("ko_core_news_lg", disable=["parser"])
+nlp = spacy.load("ko_core_news_lg", disable=["parser", "lemmatizer"])
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00

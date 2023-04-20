@@ -3,7 +3,7 @@ import re
 import spacy
 
 spacy.prefer_gpu()
-nlp = spacy.load("de_dep_news_trf", disable=["parser"])
+nlp = spacy.load("de_dep_news_trf", disable=["parser", "lemmatizer"])
 
 FORMAL_RE = re.compile(
     r"\s(?:(Sie)|(Ihr)|(Ihrer)|(Ihnen)|(Ihre)|(Ihren)|(Euch)|(Euer)|(Eure)|(Euren))\b"

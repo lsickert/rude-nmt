@@ -7,13 +7,18 @@ TATOEBA_TAR = "https://object.pouta.csc.fi/Tatoeba-Challenge-v2021-08-07/deu-kor
 
 if __name__ == "__main__":
 
-    preprocess.get_tatoeba(TATOEBA_TAR)
+    #preprocess.get_tatoeba(TATOEBA_TAR)
 
+    print("##### Preprocessing Tatoeba data #####")
     subtitle_data = preprocess.get_subtitle_dataset()
 
+    print("##### Annotating German POS tags #####")
     subtitle_data = subtitle_data.map(label_german.get_pos_tags, load_from_cache_file=False, batched=True)
+    print("##### Annotating Korean POS tags #####")
     subtitle_data = subtitle_data.map(label_korean.get_pos_tags, load_from_cache_file=False, batched=True)
+    print("##### Annotating German formality #####")
     subtitle_data = subtitle_data.map(label_german.annotate_formality, load_from_cache_file=False, num_proc=os.cpu_count())
+    print("##### Annotating Korean formality #####")
     subtitle_data = subtitle_data.map(label_korean.annotate_formality, load_from_cache_file=False, num_proc=os.cpu_count())
 
     subtitle_data.to_csv("./data/subtitle_data.csv", num_proc=os.cpu_count())

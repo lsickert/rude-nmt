@@ -35,7 +35,7 @@ black = "^22.10.0"
 optional = true
 
 [tool.poetry.group.cuda.dependencies]
-spacy = {version="^3.5.1", extras=["cuda117"]}
+spacy = {version="^3.5.1", extras=["cuda-autodetect"]}
 
 [tool.poetry.group.apple]
 optional = true
