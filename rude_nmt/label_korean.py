@@ -1,9 +1,12 @@
 """provides functions to annotate formality for Korean"""
 import re
+import os
 from math import floor
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 import spacy
+from spacy.tokens import Doc
 from jamo import j2hcj
+from datasets import Dataset
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00
@@ -54,7 +57,26 @@ HAECHE_RE = re.compile(
 )
 
 
-def annotate_formality(example):
+def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
+    """annotate the Korean formality of a dataset"""
+    print("##### Annotating Korean POS tags #####")
+    ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen)
+
+    print("##### Annotating Korean formality #####")
+    ds = ds.map(
+        annotate_formality_single,
+        load_from_cache_file=not force_regen,
+        num_proc=os.cpu_count(),
+    )
+
+    old_cache = ds.cleanup_cache_files()
+
+    print(f"#### removed {old_cache} old cache files ####")
+
+    return ds
+
+
+def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     """
     annotate the formality of a Korean sentence by matching it through a regex
     based on the endings of the main verb at the end of the sentence.
@@ -87,6 +109,35 @@ def annotate_formality(example):
         form = "underspecified"
 
     example["ko_formality"] = form
+
+    if "ko_nmt" in example:
+        form = None
+
+        if is_hasoseoche(example["ko_nmt"]):
+            form = "hasoseoche" if form is None else "ambiguous"
+
+        if is_hasipsioche(example["ko_nmt"]):
+            form = "hasipsioche" if form is None else "ambiguous"
+
+        if is_haoche(example["ko_nmt"]):
+            form = "haoche" if form is None else "ambiguous"
+
+        if is_hageche(example["ko_nmt"]):
+            form = "hageche" if form is None else "ambiguous"
+
+        if is_haerache(example["ko_nmt"]):
+            form = "haerache" if form is None else "ambiguous"
+
+        if is_haeyoche(example["ko_nmt"]):
+            form = "hayoche" if form is None else "ambiguous"
+
+        if is_haeche(example["ko_nmt"]):
+            form = "haeche" if form is None else "ambiguous"
+
+        if form is None:
+            form = "underspecified"
+
+        example["ko_formality_nmt"] = form
 
     return example
 
@@ -338,19 +389,41 @@ def is_hangul(char: str) -> bool:
     return U_HAN_START <= ord(char) <= U_HAN_END
 
 
-def get_pos_tags(examples):
+def get_pos_tags(examples: dict[str, list]) -> dict[str, list]:
     """get the POS tags of a Korean sentence"""
 
     spacy.prefer_gpu()
-    nlp = spacy.load("ko_core_news_lg", disable=["parser", "lemmatizer"])
+    nlp = spacy.load("ko_core_news_lg", disable=["lemmatizer"])
 
     examples["ko_upos_tags"] = []
     examples["ko_pos_tags"] = []
     examples["ko_ws_tokens"] = []
+    examples["ko_sent_ids"] = []
 
     for doc in nlp.pipe(examples["target"]):
         examples["ko_upos_tags"].append([token.pos_ for token in doc])
         examples["ko_pos_tags"].append([token.tag_ for token in doc])
         examples["ko_ws_tokens"].append([token.text for token in doc])
+        examples["ko_sent_ids"].append(get_sent_id(doc))
+
+    if "ko_nmt" in examples:
+        examples["ko_upos_tags_nmt"] = []
+        examples["ko_pos_tags_nmt"] = []
+        examples["ko_ws_tokens_nmt"] = []
+        examples["ko_sent_ids_nmt"] = []
+
+        for doc in nlp.pipe(examples["ko_nmt"]):
+            examples["ko_upos_tags_nmt"].append([token.pos_ for token in doc])
+            examples["ko_pos_tags_nmt"].append([token.tag_ for token in doc])
+            examples["ko_ws_tokens_nmt"].append([token.text for token in doc])
+            examples["ko_sent_ids_nmt"].append(get_sent_id(doc))
 
     return examples
+
+
+def get_sent_id(example: Doc) -> list:
+    """get the sentence index for each token"""
+    if example.has_annotation("SENT_START"):
+        return [sent_id for sent_id, sent in enumerate(example.sents) for token in sent]
+    else:
+        return [0 for token in example]

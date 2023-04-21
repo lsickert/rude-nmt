@@ -7,16 +7,17 @@ import tarfile
 import os
 from pathlib import Path
 from functools import partial
+from typing import Any
 import requests
 from tqdm import tqdm
-from datasets import load_dataset, load_from_disk
+from datasets import Dataset, load_dataset, load_from_disk
 
 
 TATOEBA_TAR = "https://object.pouta.csc.fi/Tatoeba-Challenge-v2021-08-07/deu-kor.tar"
 DATA_FOLDER = Path(__file__).parent.parent.resolve() / "data"
 
 
-def _check_dir_exists(path: Path):
+def _check_dir_exists(path: Path) -> None:
     if not path.exists():
         path.mkdir(parents=True)
 
@@ -24,15 +25,16 @@ def _check_dir_exists(path: Path):
 _check_dir_exists(DATA_FOLDER)
 
 
-def get_tatoeba(url: str, force: bool = False):
+def get_tatoeba(url: str = TATOEBA_TAR, force: bool = False) -> None:
     """download and extract the tatoeba dataset"""
     fpath = _download_file(url, force)
 
-    _extract_tar(fpath)
+    if not fpath.exists() or force:
+        _extract_tar(fpath)
 
-    _extract_file("release/v2021-08-07/deu-kor/train.id.gz")
-    _extract_file("release/v2021-08-07/deu-kor/train.src.gz")
-    _extract_file("release/v2021-08-07/deu-kor/train.trg.gz")
+        _extract_file("release/v2021-08-07/deu-kor/train.id.gz")
+        _extract_file("release/v2021-08-07/deu-kor/train.src.gz")
+        _extract_file("release/v2021-08-07/deu-kor/train.trg.gz")
 
     split_list = ["train", "dev", "test"]
 
@@ -82,7 +84,7 @@ def get_tatoeba(url: str, force: bool = False):
             trg_file.close()
 
 
-def get_dataset(force_renew: bool = False):
+def get_dataset(force_renew: bool = False) -> Dataset:
     """get the processed tatoeba dataset."""
     dataset = load_dataset(
         str(DATA_FOLDER),
@@ -102,10 +104,14 @@ def get_dataset(force_renew: bool = False):
         load_from_cache_file=force_renew,
     )
 
+    old_cache = clean_data.cleanup_cache_files()
+
+    print(f"#### removed {old_cache} old cache files ####")
+
     return clean_data
 
 
-def get_subtitle_dataset(force_renew: bool = False):
+def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
     """get the subset with subtitle data from the train-split of the tatoeba-dataset"""
 
     subtitle_folder = DATA_FOLDER / "subtitles"
@@ -134,10 +140,14 @@ def get_subtitle_dataset(force_renew: bool = False):
     else:
         subtitle_set = load_from_disk(subtitle_folder)
 
+    old_cache = subtitle_set.cleanup_cache_files()
+
+    print(f"#### removed {old_cache} old cache files ####")
+
     return subtitle_set
 
 
-def _clean_examples(example):
+def _clean_examples(example: dict[str, Any]) -> dict[str, Any]:
     example["source"] = example["source"].strip()
     example["target"] = example["target"].strip()
 
@@ -179,7 +189,7 @@ def _download_file(url: str, force_redownload: bool = False) -> Path:
     return fpath
 
 
-def _extract_tar(file: Path):
+def _extract_tar(file: Path) -> None:
 
     tar = tarfile.open(file)
     tar.extractall()
