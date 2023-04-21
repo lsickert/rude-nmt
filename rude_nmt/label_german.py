@@ -2,9 +2,6 @@
 import re
 import spacy
 
-spacy.prefer_gpu()
-nlp = spacy.load("de_dep_news_trf", disable=["parser", "lemmatizer"])
-
 FORMAL_RE = re.compile(
     r"\s(?:(Sie)|(Ihr)|(Ihrer)|(Ihnen)|(Ihre)|(Ihren)|(Euch)|(Euer)|(Eure)|(Euren))\b"
 )
@@ -44,6 +41,9 @@ def annotate_tv_formality(example):
 
 def get_pos_tags(examples):
     """get the POS tags of a German sentence"""
+    spacy.prefer_gpu()
+    nlp = spacy.load("de_dep_news_trf", disable=["parser", "lemmatizer"])
+
     examples["de_upos_tags"] = []
     examples["de_pos_tags"] = []
     examples["de_ws_tokens"] = []

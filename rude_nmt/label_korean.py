@@ -5,9 +5,6 @@ from typing import Optional, Tuple
 import spacy
 from jamo import j2hcj
 
-spacy.prefer_gpu()
-nlp = spacy.load("ko_core_news_lg", disable=["parser", "lemmatizer"])
-
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00
 U_HAN_END = 0xD7A3
@@ -343,6 +340,10 @@ def is_hangul(char: str) -> bool:
 
 def get_pos_tags(examples):
     """get the POS tags of a Korean sentence"""
+
+    spacy.prefer_gpu()
+    nlp = spacy.load("ko_core_news_lg", disable=["parser", "lemmatizer"])
+
     examples["ko_upos_tags"] = []
     examples["ko_pos_tags"] = []
     examples["ko_ws_tokens"] = []
