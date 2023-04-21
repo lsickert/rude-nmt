@@ -53,7 +53,7 @@ HAEYOCHE_RE = re.compile(
 )
 
 HAECHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<declInd1>어)|(?P<declInd2>야)|(?P<declConf1>지)|(?P<declConf2>다지)|(?P<declKno>라지)|(?P<declCaus1>거든)|(?P<declCaus2>거들랑)|(?P<declExp>데)|(?P<declAnsw>고)|(?P<declNoAlt>밖에)|(?P<intInd>까)|(?P<intGues>게)|(?P<intTho>레)|(?P<intExp>려나)|(?P<intOp>거나)|(?P<intConf1>다면서)|(?P<intConf2>라면서)|(?P<excImp>구먼)|(?P<excRes>더라니)|(?P<excAdm1>데라니)|(?P<excAdm2>사)|(?P<excSelf>로고)|(?P<prop>자니까)|(?P<objNeg>세말이지)|(?P<monAsk1>다니)|(?P<monAsk2>라니)|(?P<monAdm>걸)|(?P<monEmph1>다니까)|(?P<monEmph2>라니까)|(?P<monDen1>대)|(?P<monDen2>(?<!구)나))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<declInd1>어)|(?P<declInd2>아)|(?P<declInd3>야)|(?P<declConf1>지)|(?P<declConf2>다지)|(?P<declKno>라지)|(?P<declCaus1>거든)|(?P<declCaus2>거들랑)|(?P<declExp>데)|(?P<declAnsw>고)|(?P<declNoAlt>밖에)|(?P<intInd>까)|(?P<intGues>게)|(?P<intTho>레)|(?P<intExp>려나)|(?P<intOp>거나)|(?P<intConf1>다면서)|(?P<intConf2>라면서)|(?P<excImp>구먼)|(?P<excRes>더라니)|(?P<excAdm1>데라니)|(?P<excAdm2>사)|(?P<excSelf>로고)|(?P<prop>자니까)|(?P<objNeg>세말이지)|(?P<monAsk1>다니)|(?P<monAsk2>라니)|(?P<monAdm>걸)|(?P<monEmph1>다니까)|(?P<monEmph2>라니까)|(?P<monDen1>대)|(?P<monDen2>(?<!구)나))\b(?!\s\w)"
 )
 
 
@@ -84,26 +84,43 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
     form = None
 
-    if is_hasoseoche(example["target"]):
-        form = "hasoseoche" if form is None else "ambiguous"
+    num_words = len(example["ko_ws_tokens"]) - 1
+    sent = -1
 
-    if is_hasipsioche(example["target"]):
-        form = "hasipsioche" if form is None else "ambiguous"
+    for i in range(num_words, -1, -1):
+        if example["ko_upos_tags"][i] == "VERB" and sent != example["ko_sent_ids"][i]:
+            sent = example["ko_sent_ids"][i]
 
-    if is_haoche(example["target"]):
-        form = "haoche" if form is None else "ambiguous"
+            if is_hasoseoche(example["ko_ws_tokens"][i]):
+                form = (
+                    "hasoseoche"
+                    if (form is None or form == "hasoseoche")
+                    else "ambiguous"
+                )
 
-    if is_hageche(example["target"]):
-        form = "hageche" if form is None else "ambiguous"
+            if is_hasipsioche(example["ko_ws_tokens"][i]):
+                form = (
+                    "hasipsioche"
+                    if (form is None or form == "hasipsioche")
+                    else "ambiguous"
+                )
 
-    if is_haerache(example["target"]):
-        form = "haerache" if form is None else "ambiguous"
+            if is_haoche(example["ko_ws_tokens"][i]):
+                form = "haoche" if (form is None or form == "haoche") else "ambiguous"
 
-    if is_haeyoche(example["target"]):
-        form = "hayoche" if form is None else "ambiguous"
+            if is_hageche(example["ko_ws_tokens"][i]):
+                form = "hageche" if (form is None or form == "hageche") else "ambiguous"
 
-    if is_haeche(example["target"]):
-        form = "haeche" if form is None else "ambiguous"
+            if is_haerache(example["ko_ws_tokens"][i]):
+                form = (
+                    "haerache" if (form is None or form == "haerache") else "ambiguous"
+                )
+
+            if is_haeyoche(example["ko_ws_tokens"][i]):
+                form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
+
+            if is_haeche(example["ko_ws_tokens"][i]):
+                form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
     if form is None:
         form = "underspecified"
@@ -111,28 +128,49 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     example["ko_formality"] = form
 
     if "ko_nmt" in example:
+
         form = None
 
-        if is_hasoseoche(example["ko_nmt"]):
-            form = "hasoseoche" if form is None else "ambiguous"
+        num_words = len(example["ko_ws_tokens_nmt"]) - 1
+        sent = -1
 
-        if is_hasipsioche(example["ko_nmt"]):
-            form = "hasipsioche" if form is None else "ambiguous"
+        for i in range(num_words, -1, -1):
+            if (
+                example["ko_upos_tags_nmt"][i] == "VERB"
+                and sent != example["ko_sent_ids_nmt"][i]
+            ):
+                sent = example["ko_sent_ids_nmt"][i]
 
-        if is_haoche(example["ko_nmt"]):
-            form = "haoche" if form is None else "ambiguous"
+            if is_hasoseoche(example["ko_ws_tokens_nmt"][i]):
+                form = (
+                    "hasoseoche"
+                    if (form is None or form == "hasoseoche")
+                    else "ambiguous"
+                )
 
-        if is_hageche(example["ko_nmt"]):
-            form = "hageche" if form is None else "ambiguous"
+            if is_hasipsioche(example["ko_ws_tokens_nmt"][i]):
+                form = (
+                    "hasipsioche"
+                    if (form is None or form == "hasipsioche")
+                    else "ambiguous"
+                )
 
-        if is_haerache(example["ko_nmt"]):
-            form = "haerache" if form is None else "ambiguous"
+            if is_haoche(example["ko_ws_tokens_nmt"][i]):
+                form = "haoche" if (form is None or form == "haoche") else "ambiguous"
 
-        if is_haeyoche(example["ko_nmt"]):
-            form = "hayoche" if form is None else "ambiguous"
+            if is_hageche(example["ko_ws_tokens_nmt"][i]):
+                form = "hageche" if (form is None or form == "hageche") else "ambiguous"
 
-        if is_haeche(example["ko_nmt"]):
-            form = "haeche" if form is None else "ambiguous"
+            if is_haerache(example["ko_ws_tokens_nmt"][i]):
+                form = (
+                    "haerache" if (form is None or form == "haerache") else "ambiguous"
+                )
+
+            if is_haeyoche(example["ko_ws_tokens_nmt"][i]):
+                form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
+
+            if is_haeche(example["ko_ws_tokens_nmt"][i]):
+                form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
         if form is None:
             form = "underspecified"
