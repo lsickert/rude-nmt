@@ -51,9 +51,6 @@ if __name__ == "__main__":
     ds = None
     ds_name = "unknown"
 
-    ds_label_folder = DATA_FOLDER / f"{ds_name}_labelled"
-    ds_trans_folder = DATA_FOLDER / f"{ds_name}_translated"
-
     if options.data == "tatoeba":
         ds_name = "tatoeba"
         preprocess.get_tatoeba(force=options.force_new)
@@ -61,8 +58,11 @@ if __name__ == "__main__":
         print("##### Preprocessing Tatoeba data #####")
         ds = preprocess.get_subtitle_dataset(options.force_new)
 
+    ds_label_folder = DATA_FOLDER / f"{ds_name}_labelled"
+    ds_trans_folder = DATA_FOLDER / f"{ds_name}_translated"
+
     if options.translate:
-        ds = translation.translate(ds, options.force_new)
+        ds = translation.translate_ds(ds, force_regen=options.force_new)
 
         ds.save_to_disk(ds_trans_folder)
 
