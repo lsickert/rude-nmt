@@ -19,6 +19,8 @@ inseq = "^0.3.3"
 sacremoses = "^0.0.53"
 spacy = {version="^3.5.1", extras=["transformers", "ko", "de", "en"]}
 torch = "^1.13.1"
+sentencepiece = "^0.1.98"
+tqdm = "^4.65.0"
 
 [tool.poetry.group.dev]
 optional = true

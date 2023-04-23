@@ -4,7 +4,7 @@ import sys
 import argparse
 from datasets import load_from_disk
 from tatoeba import preprocess, DATA_FOLDER
-from rude_nmt import label_german, label_korean
+from rude_nmt import label_german, label_korean, translation
 
 DATA = ["tatoeba", "iwslt"]
 
@@ -31,12 +31,18 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--translate",
+    action="store_true",
+    default=False,
+    help="Translate the dataset",
+)
+
+parser.add_argument(
     "--save_csv",
     action="store_true",
     default=False,
     help="Save the dataset as a csv file",
 )
-
 
 if __name__ == "__main__":
 
@@ -46,6 +52,7 @@ if __name__ == "__main__":
     ds_name = "unknown"
 
     ds_label_folder = DATA_FOLDER / f"{ds_name}_labelled"
+    ds_trans_folder = DATA_FOLDER / f"{ds_name}_translated"
 
     if options.data == "tatoeba":
         ds_name = "tatoeba"
@@ -53,6 +60,11 @@ if __name__ == "__main__":
 
         print("##### Preprocessing Tatoeba data #####")
         ds = preprocess.get_subtitle_dataset(options.force_new)
+
+    if options.translate:
+        ds = translation.translate(ds, options.force_new)
+
+        ds.save_to_disk(ds_trans_folder)
 
     if options.label_data:
         ds = label_german.annotate_ds(ds, options.force_new)
