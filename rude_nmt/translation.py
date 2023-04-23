@@ -49,9 +49,13 @@ def translate_ds(
         """tokenize the dataset using the given tokenizer"""
 
         def tokenize_function(examples, tok_col: str):
-            return tokenizer(
-                examples[tok_col], truncation=True, padding=True, return_tensors="pt"
+            tokens = tokenizer(
+                examples[tok_col],
+                truncation=True,
+                padding=True,
+                max_length=512,
             )
+            return tokens
 
         tokenized_ds = ds.map(
             tokenize_function,
@@ -62,11 +66,13 @@ def translate_ds(
             fn_kwargs={"tok_col": tok_col},
             load_from_cache_file=not force_regen,
         )
+        # interestingly the batching only works correctly when the format is set here instead of inside tokenize_function
+        tokenized_ds.set_format(type="torch", columns=["input_ids", "attention_mask"])
         return tokenized_ds
 
     print("##### Tokenizing German sentences #####")
     tokenized_ds_de = tokenize_data(ds, tokenizer_de, batch_size, "source", force_regen)
-    print("##### Tokeinzing Korean sentences #####")
+    print("##### Tokenizing Korean sentences #####")
     tokenized_ds_ko = tokenize_data(ds, tokenizer_ko, batch_size, "target", force_regen)
 
     device = get_device()
