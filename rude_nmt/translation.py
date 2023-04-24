@@ -1,5 +1,5 @@
+"""this module contains functions to generate translations through mbart50"""
 import os
-from pathlib import Path
 
 # import torch.backends.mps as mps
 import torch.backends.cuda as cuda_back
@@ -28,7 +28,7 @@ def get_device() -> str:
 
 
 def translate_ds(
-    ds: Dataset, batch_size: int = 64, force_regen: bool = False
+    ds: Dataset, batch_size: int = 32, force_regen: bool = False
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 
