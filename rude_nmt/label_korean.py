@@ -60,7 +60,19 @@ HAECHE_RE = re.compile(
 def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
     """annotate the Korean formality of a dataset"""
     print("##### Annotating Korean POS tags #####")
-    ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen)
+    ds = ds.map(
+        get_pos_tags,
+        batched=True,
+        load_from_cache_file=not force_regen,
+        fn_kwargs={"col": "target"},
+    )
+    if "ko_nmt" in ds.column_names:
+        ds = ds.map(
+            get_pos_tags,
+            batched=True,
+            load_from_cache_file=not force_regen,
+            fn_kwargs={"col": "ko_nmt"},
+        )
 
     print("##### Annotating Korean formality #####")
     ds = ds.map(
@@ -84,42 +96,45 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
     form = None
 
-    num_words = len(example["ko_ws_tokens"]) - 1
+    num_words = len(example["ws_tokens_target"]) - 1
     sent = -1
 
     for i in range(num_words, -1, -1):
-        if example["ko_upos_tags"][i] == "VERB" and sent != example["ko_sent_ids"][i]:
-            sent = example["ko_sent_ids"][i]
+        if (
+            example["upos_tags_target"][i] == "VERB"
+            and sent != example["sent_ids_target"][i]
+        ):
+            sent = example["sent_ids_target"][i]
 
-            if is_hasoseoche(example["ko_ws_tokens"][i]):
+            if is_hasoseoche(example["ws_tokens_target"][i]):
                 form = (
                     "hasoseoche"
                     if (form is None or form == "hasoseoche")
                     else "ambiguous"
                 )
 
-            if is_hasipsioche(example["ko_ws_tokens"][i]):
+            if is_hasipsioche(example["ws_tokens_target"][i]):
                 form = (
                     "hasipsioche"
                     if (form is None or form == "hasipsioche")
                     else "ambiguous"
                 )
 
-            if is_haoche(example["ko_ws_tokens"][i]):
+            if is_haoche(example["ws_tokens_target"][i]):
                 form = "haoche" if (form is None or form == "haoche") else "ambiguous"
 
-            if is_hageche(example["ko_ws_tokens"][i]):
+            if is_hageche(example["ws_tokens_target"][i]):
                 form = "hageche" if (form is None or form == "hageche") else "ambiguous"
 
-            if is_haerache(example["ko_ws_tokens"][i]):
+            if is_haerache(example["ws_tokens_target"][i]):
                 form = (
                     "haerache" if (form is None or form == "haerache") else "ambiguous"
                 )
 
-            if is_haeyoche(example["ko_ws_tokens"][i]):
+            if is_haeyoche(example["ws_tokens_target"][i]):
                 form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
 
-            if is_haeche(example["ko_ws_tokens"][i]):
+            if is_haeche(example["ws_tokens_target"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
     if form is None:
@@ -131,45 +146,45 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
         form = None
 
-        num_words = len(example["ko_ws_tokens_nmt"]) - 1
+        num_words = len(example["ws_tokens_ko_nmt"]) - 1
         sent = -1
 
         for i in range(num_words, -1, -1):
             if (
-                example["ko_upos_tags_nmt"][i] == "VERB"
-                and sent != example["ko_sent_ids_nmt"][i]
+                example["upos_tags_ko_nmt"][i] == "VERB"
+                and sent != example["sent_ids_ko_nmt"][i]
             ):
-                sent = example["ko_sent_ids_nmt"][i]
+                sent = example["sent_ids_ko_nmt"][i]
 
-            if is_hasoseoche(example["ko_ws_tokens_nmt"][i]):
+            if is_hasoseoche(example["ws_tokens_ko_nmt"][i]):
                 form = (
                     "hasoseoche"
                     if (form is None or form == "hasoseoche")
                     else "ambiguous"
                 )
 
-            if is_hasipsioche(example["ko_ws_tokens_nmt"][i]):
+            if is_hasipsioche(example["ws_tokens_ko_nmt"][i]):
                 form = (
                     "hasipsioche"
                     if (form is None or form == "hasipsioche")
                     else "ambiguous"
                 )
 
-            if is_haoche(example["ko_ws_tokens_nmt"][i]):
+            if is_haoche(example["ws_tokens_ko_nmt"][i]):
                 form = "haoche" if (form is None or form == "haoche") else "ambiguous"
 
-            if is_hageche(example["ko_ws_tokens_nmt"][i]):
+            if is_hageche(example["ws_tokens_ko_nmt"][i]):
                 form = "hageche" if (form is None or form == "hageche") else "ambiguous"
 
-            if is_haerache(example["ko_ws_tokens_nmt"][i]):
+            if is_haerache(example["ws_tokens_ko_nmt"][i]):
                 form = (
                     "haerache" if (form is None or form == "haerache") else "ambiguous"
                 )
 
-            if is_haeyoche(example["ko_ws_tokens_nmt"][i]):
+            if is_haeyoche(example["ws_tokens_ko_nmt"][i]):
                 form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
 
-            if is_haeche(example["ko_ws_tokens_nmt"][i]):
+            if is_haeche(example["ws_tokens_ko_nmt"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
         if form is None:
@@ -427,34 +442,22 @@ def is_hangul(char: str) -> bool:
     return U_HAN_START <= ord(char) <= U_HAN_END
 
 
-def get_pos_tags(examples: dict[str, list]) -> dict[str, list]:
+def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
     """get the POS tags of a Korean sentence"""
 
     spacy.prefer_gpu()
     nlp = spacy.load("ko_core_news_lg", disable=["lemmatizer"])
 
-    examples["ko_upos_tags"] = []
-    examples["ko_pos_tags"] = []
-    examples["ko_ws_tokens"] = []
-    examples["ko_sent_ids"] = []
+    examples[f"upos_tags_{col}"] = []
+    examples[f"pos_tags_{col}"] = []
+    examples[f"ws_tokens_{col}"] = []
+    examples[f"sent_ids_{col}"] = []
 
-    for doc in nlp.pipe(examples["target"]):
-        examples["ko_upos_tags"].append([token.pos_ for token in doc])
-        examples["ko_pos_tags"].append([token.tag_ for token in doc])
-        examples["ko_ws_tokens"].append([token.text for token in doc])
-        examples["ko_sent_ids"].append(get_sent_id(doc))
-
-    if "ko_nmt" in examples:
-        examples["ko_upos_tags_nmt"] = []
-        examples["ko_pos_tags_nmt"] = []
-        examples["ko_ws_tokens_nmt"] = []
-        examples["ko_sent_ids_nmt"] = []
-
-        for doc in nlp.pipe(examples["ko_nmt"]):
-            examples["ko_upos_tags_nmt"].append([token.pos_ for token in doc])
-            examples["ko_pos_tags_nmt"].append([token.tag_ for token in doc])
-            examples["ko_ws_tokens_nmt"].append([token.text for token in doc])
-            examples["ko_sent_ids_nmt"].append(get_sent_id(doc))
+    for doc in nlp.pipe(examples[col]):
+        examples[f"upos_tags_{col}"].append([token.pos_ for token in doc])
+        examples[f"pos_tags_{col}"].append([token.tag_ for token in doc])
+        examples[f"ws_tokens_{col}"].append([token.text for token in doc])
+        examples[f"sent_ids_{col}"].append(get_sent_id(doc))
 
     return examples
 

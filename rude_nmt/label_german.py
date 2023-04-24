@@ -18,7 +18,9 @@ INFORMAL_RE = re.compile(r"\b[Dd](?:(u)|(ich)|(ir)|(ein)|(eine)|(einen)|(einer))
 def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
     """annotate the German formality of a dataset"""
     print("##### Annotating German POS tags #####")
-    ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen)
+    ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen, fn_kwargs={"col": "source"})
+    if "de_nmt" in ds.column_names:
+        ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen, fn_kwargs={"col": "de_nmt"})
 
     print("##### Annotating German formality #####")
     ds = ds.map(
@@ -77,33 +79,21 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     return example
 
 
-def get_pos_tags(examples: dict[str, list]) -> dict[str, list]:
+def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
     """get the POS tags of a German sentence"""
     spacy.prefer_gpu()
     nlp = spacy.load("de_dep_news_trf", disable=["lemmatizer"])
 
-    examples["de_upos_tags"] = []
-    examples["de_pos_tags"] = []
-    examples["de_ws_tokens"] = []
-    examples["de_sent_ids"] = []
+    examples[f"upos_tags_{col}"] = []
+    examples[f"pos_tags_{col}"] = []
+    examples[f"ws_tokens_{col}"] = []
+    examples[f"sent_ids_{col}"] = []
 
-    for doc in nlp.pipe(examples["source"]):
-        examples["de_upos_tags"].append([token.pos_ for token in doc])
-        examples["de_pos_tags"].append([token.tag_ for token in doc])
-        examples["de_ws_tokens"].append([token.text for token in doc])
-        examples["de_sent_ids"].append(get_sent_id(doc))
-
-    if "de_nmt" in examples:
-        examples["de_upos_tags_nmt"] = []
-        examples["de_pos_tags_nmt"] = []
-        examples["de_ws_tokens_nmt"] = []
-        examples["de_sent_ids_nmt"] = []
-
-        for doc in nlp.pipe(examples["de_nmt"]):
-            examples["de_upos_tags_nmt"].append([token.pos_ for token in doc])
-            examples["de_pos_tags_nmt"].append([token.tag_ for token in doc])
-            examples["de_ws_tokens_nmt"].append([token.text for token in doc])
-            examples["de_sent_ids_nmt"].append(get_sent_id(doc))
+    for doc in nlp.pipe(examples[col]):
+        examples[f"upos_tags_{col}"].append([token.pos_ for token in doc])
+        examples[f"pos_tags_{col}"].append([token.tag_ for token in doc])
+        examples[f"ws_tokens_{col}"].append([token.text for token in doc])
+        examples[f"sent_ids_{col}"].append(get_sent_id(doc))
 
     return examples
 
