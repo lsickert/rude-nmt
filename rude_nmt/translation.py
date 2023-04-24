@@ -28,7 +28,7 @@ def get_device() -> str:
 
 
 def translate_ds(
-    ds: Dataset, batch_size: int = 32, force_regen: bool = False
+    ds: Dataset, batch_size: int = 64, force_regen: bool = False
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 
@@ -106,8 +106,14 @@ def translate_ds(
         for batch in loaded_ds:
             batch = {k: v.to(device) for k, v in batch.items()}
 
+            batch_len = batch["input_ids"].size(1)
+
+            max_length = 2 * batch_len
+
             outputs = model.generate(
-                **batch, forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang]
+                **batch,
+                forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang],
+                max_new_tokens=max_length,
             )
 
             batch_trans = tokenizer.batch_decode(outputs, skip_special_tokens=True)
