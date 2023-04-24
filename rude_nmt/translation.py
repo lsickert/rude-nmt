@@ -6,7 +6,11 @@ import torch.backends.cuda as cuda_back
 import torch.cuda as cuda
 from torch.utils.data import DataLoader
 
-from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
+from transformers import (
+    MBartForConditionalGeneration,
+    MBart50TokenizerFast,
+    DataCollatorForSeq2Seq,
+)
 from datasets import Dataset
 
 from tqdm.auto import tqdm
@@ -52,7 +56,6 @@ def translate_ds(
             tokens = tokenizer(
                 examples[tok_col],
                 truncation=True,
-                padding=True,
                 max_length=512,
             )
             return tokens
@@ -92,7 +95,11 @@ def translate_ds(
 
         trans = []
 
-        loaded_ds = DataLoader(ds, batch_size=batch_size)
+        data_collator = DataCollatorForSeq2Seq(
+            tokenizer, model=model, return_tensors="pt"
+        )
+
+        loaded_ds = DataLoader(ds, batch_size=batch_size, collate_fn=data_collator)
 
         progress_bar = tqdm(range(len(loaded_ds)))
 
