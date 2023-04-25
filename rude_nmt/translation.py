@@ -1,6 +1,7 @@
 """this module contains functions to generate translations through mbart50"""
 import os
 
+import torch
 # import torch.backends.mps as mps
 import torch.backends.cuda as cuda_back
 import torch.cuda as cuda
@@ -82,9 +83,6 @@ def translate_ds(
     print(f"### evaluating model on {device} ###")
     model.to(device)
 
-    model.eval()
-    model.zero_grad()
-
     def translate_data(
         model: MBartForConditionalGeneration,
         tokenizer: MBart50TokenizerFast,
@@ -103,18 +101,22 @@ def translate_ds(
 
         progress_bar = tqdm(range(len(loaded_ds)))
 
+        model.eval()
+        model.zero_grad()
+
         for batch in loaded_ds:
-            batch = {k: v.to(device) for k, v in batch.items()}
+            with torch.no_grad():
+                batch = {k: v.to(device) for k, v in batch.items()}
 
-            batch_len = batch["input_ids"].size(1)
+                batch_len = batch["input_ids"].size(1)
 
-            max_length = 2 * batch_len
+                max_length = 2 * batch_len
 
-            outputs = model.generate(
-                **batch,
-                forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang],
-                max_new_tokens=max_length,
-            )
+                outputs = model.generate(
+                    **batch,
+                    forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang],
+                    max_new_tokens=max_length,
+                )
 
             batch_trans = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
