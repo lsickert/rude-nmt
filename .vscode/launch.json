@@ -13,8 +13,7 @@
             "justMyCode": false,
             "args": [
                 "--data",
-                "iwslt",
-                "--label_data"
+                "tatoeba"
             ]
         }
     ]

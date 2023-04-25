@@ -29,7 +29,7 @@ def get_device() -> str:
 
 
 def translate_ds(
-    ds: Dataset, batch_size: int = 24, force_regen: bool = False
+    ds: Dataset, batch_size: int = 32, force_regen: bool = False
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 

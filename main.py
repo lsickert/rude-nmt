@@ -25,10 +25,17 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--force_new",
+    "--force_regenerate",
     action="store_true",
     default=False,
     help="Disable the use of cached versions of the datasets",
+)
+
+parser.add_argument(
+    "--force_redownload",
+    action="store_true",
+    default=False,
+    help="Force a redownload of the tatoeba dataset",
 )
 
 parser.add_argument(
@@ -56,19 +63,19 @@ if __name__ == "__main__":
     ds_trans_folder = tatoeba.DATA_FOLDER / f"{ds_name}_translated"
 
     if options.data == "tatoeba":
-        tatoeba.preprocess.get_tatoeba(force=options.force_new)
+        tatoeba.preprocess.get_tatoeba(force=options.force_redownload)
 
         print("##### Preprocessing Tatoeba data #####")
-        ds = tatoeba.preprocess.get_subtitle_dataset(options.force_new)
+        ds = tatoeba.preprocess.get_subtitle_dataset(options.force_regenerate)
 
         if options.translate:
-            ds = translation.translate_ds(ds, force_regen=options.force_new)
+            ds = translation.translate_ds(ds, force_regen=options.force_regenerate)
 
             ds.save_to_disk(ds_trans_folder)
 
         if options.label_data:
-            ds = label_german.annotate_ds(ds, options.force_new)
-            ds = label_korean.annotate_ds(ds, options.force_new)
+            ds = label_german.annotate_ds(ds, options.force_regenerate)
+            ds = label_korean.annotate_ds(ds, options.force_regenerate)
 
             ds.save_to_disk(ds_label_folder)
         else:
@@ -83,7 +90,7 @@ if __name__ == "__main__":
     elif options.data == "iwslt":
 
         print("##### Preprocessing IWSLT data #####")
-        ds = iwslt.preprocess.get_iwslt(options.force_new)
+        ds = iwslt.preprocess.get_iwslt(options.force_regenerate)
 
         if options.label_data:
             for col in ds.column_names:
@@ -91,14 +98,14 @@ if __name__ == "__main__":
                     ds = ds.map(
                         label_german.get_pos_tags,
                         batched=True,
-                        load_from_cache_file=not options.force_new,
+                        load_from_cache_file=not options.force_regenerate,
                         fn_kwargs={"col": col},
                     )
                 elif col.endswith("_ko"):
                     ds = ds.map(
                         label_korean.get_pos_tags,
                         batched=True,
-                        load_from_cache_file=not options.force_new,
+                        load_from_cache_file=not options.force_regenerate,
                         fn_kwargs={"col": col},
                     )
 
