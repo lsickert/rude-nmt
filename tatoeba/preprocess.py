@@ -135,7 +135,7 @@ def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
         )
 
         subtitle_set = subtitle_set.filter(
-            lambda ex: len(ex["source"].split()) > 100 or len(ex["target"].split()) > 100,
+            lambda ex: len(ex["source"].split()) < 100 and len(ex["target"].split()) < 100,
             num_proc=os.cpu_count(),
             load_from_cache_file=not force_renew,
         )
