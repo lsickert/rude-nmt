@@ -101,7 +101,7 @@ def get_dataset(force_renew: bool = False) -> Dataset:
     clean_data = dataset.filter(
         lambda ex: ex["source"] is not None and ex["target"] is not None,
         num_proc=os.cpu_count(),
-        load_from_cache_file=force_renew,
+        load_from_cache_file=not force_renew,
     )
 
     old_cache = clean_data.cleanup_cache_files()
@@ -127,17 +127,17 @@ def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
 
         subtitle_set = dataset.filter(
             lambda ex: ex["id"].startswith(subsets),
-            load_from_cache_file=force_renew,
+            load_from_cache_file=not force_renew,
         )
 
         subtitle_set = subtitle_set.map(
-            _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=force_renew
+            _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=not force_renew
         )
 
         subtitle_set = subtitle_set.filter(
             lambda ex: len(ex["source"].split()) > 100 or len(ex["target"].split()) > 100,
             num_proc=os.cpu_count(),
-            load_from_cache_file=force_renew,
+            load_from_cache_file=not force_renew,
         )
 
         subtitle_set.save_to_disk(subtitle_folder)
