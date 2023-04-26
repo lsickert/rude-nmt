@@ -16,6 +16,16 @@ from datasets import Dataset
 
 from tqdm.auto import tqdm
 
+LANG_TAG_MAP = {
+    "de": "de_DE",
+    "ko": "ko_KR",
+}
+
+LANG_COL_MAP = {
+    "de": "source",
+    "ko": "target",
+}
+
 
 def get_device() -> str:
     """returns the torch device to use for the current system"""
@@ -29,15 +39,12 @@ def get_device() -> str:
 
 
 def translate_ds(
-    ds: Dataset, batch_size: int = 32, force_regen: bool = False
+    ds: Dataset, src_lang: str, trg_lang: str, batch_size: int = 32, force_regen: bool = False
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 
-    tokenizer_de = MBart50TokenizerFast.from_pretrained(
-        "facebook/mbart-large-50-many-to-many-mmt", src_lang="de_DE"
-    )
-    tokenizer_ko = MBart50TokenizerFast.from_pretrained(
-        "facebook/mbart-large-50-many-to-many-mmt", src_lang="ko_KR"
+    tokenizer = MBart50TokenizerFast.from_pretrained(
+        "facebook/mbart-large-50-many-to-many-mmt", src_lang=LANG_TAG_MAP[src_lang]
     )
 
     model = MBartForConditionalGeneration.from_pretrained(
@@ -74,13 +81,11 @@ def translate_ds(
         tokenized_ds.set_format(type="torch", columns=["input_ids", "attention_mask"])
         return tokenized_ds
 
-    print("##### Tokenizing German sentences #####")
-    tokenized_ds_de = tokenize_data(ds, tokenizer_de, batch_size, "source", force_regen)
-    print("##### Tokenizing Korean sentences #####")
-    tokenized_ds_ko = tokenize_data(ds, tokenizer_ko, batch_size, "target", force_regen)
+    print(f"##### Tokenizing {src_lang} sentences #####")
+    tokenized_ds = tokenize_data(ds, tokenizer, batch_size, LANG_COL_MAP[src_lang], force_regen)
 
     device = get_device()
-    print(f"### evaluating model on {device} ###")
+    print(f"### using model on {device} ###")
     model.to(device)
 
     def translate_data(
@@ -127,12 +132,10 @@ def translate_ds(
         progress_bar.close()
         return trans
 
-    print("##### Translating German sentences #####")
-    ko_trans = translate_data(model, tokenizer_de, tokenized_ds_de, batch_size, "ko_KR")
-    print("##### Translating Korean sentences #####")
-    de_trans = translate_data(model, tokenizer_ko, tokenized_ds_ko, batch_size, "de_DE")
+    print(f"##### Translating {src_lang} sentences to {trg_lang} #####")
+    trans = translate_data(model, tokenizer, tokenized_ds, batch_size, LANG_TAG_MAP[trg_lang])
 
-    ds.add_column(name="ko_nmt", column=ko_trans)
-    ds.add_column(name="de_nmt", column=de_trans)
+    col_name = f"{trg_lang}_nmt"
+    ds.add_column(name=col_name, column=trans)
 
     return ds

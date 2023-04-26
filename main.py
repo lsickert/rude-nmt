@@ -8,6 +8,7 @@ import iwslt
 from rude_nmt import label_german, label_korean, translation
 
 DATA = ["tatoeba", "iwslt"]
+LANGUAGES = ["de", "ko"]
 
 parser = argparse.ArgumentParser(
     prog="RudeNMT", description="Label and attribute formality in NMT"
@@ -15,6 +16,20 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument(
     "--data", type=str, choices=DATA, help="The dataset to use", required=True
+)
+
+parser.add_argument(
+    "--src_lang",
+    type=str,
+    choices=LANGUAGES,
+    help="The source language to use",
+)
+
+parser.add_argument(
+    "--trg_lang",
+    type=str,
+    choices=LANGUAGES,
+    help="The target language to use",
 )
 
 parser.add_argument(
@@ -59,8 +74,13 @@ if __name__ == "__main__":
     ds = None
     ds_name = options.data
 
-    ds_label_folder = tatoeba.DATA_FOLDER / f"{ds_name}_labelled"
-    ds_trans_folder = tatoeba.DATA_FOLDER / f"{ds_name}_translated"
+    if options.src_lang and options.trg_lang:
+        ds_label_folder = (
+            tatoeba.DATA_FOLDER
+            / f"{ds_name}_{options.src_lang}_{options.trg_lang}_labelled"
+        )
+    else:
+        ds_label_folder = tatoeba.DATA_FOLDER / f"{ds_name}_labelled"
 
     if options.data == "tatoeba":
         tatoeba.preprocess.get_tatoeba(force=options.force_redownload)
@@ -69,7 +89,28 @@ if __name__ == "__main__":
         ds = tatoeba.preprocess.get_subtitle_dataset(options.force_regenerate)
 
         if options.translate:
-            ds = translation.translate_ds(ds, force_regen=options.force_regenerate)
+
+            ds_trans_folder = (
+                tatoeba.DATA_FOLDER
+                / f"{ds_name}_{options.src_lang}_{options.trg_lang}_translated"
+            )
+
+            if not options.src_lang or not options.trg_lang:
+                print(
+                    "Source and target language must be specified in order to carry out the translation"
+                )
+                sys.exit(1)
+
+            if options.src_lang == options.trg_lang:
+                print("Source and target language must be different")
+                sys.exit(1)
+
+            ds = translation.translate_ds(
+                ds,
+                options.src_lang,
+                options.trg_lang,
+                force_regen=options.force_regenerate,
+            )
 
             ds.save_to_disk(ds_trans_folder)
 
