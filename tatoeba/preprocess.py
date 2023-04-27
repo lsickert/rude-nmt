@@ -10,7 +10,7 @@ from functools import partial
 from typing import Any
 import requests
 from tqdm import tqdm
-from datasets import Dataset, load_dataset, load_from_disk
+from datasets import Dataset, ClassLabel, load_dataset, load_from_disk
 
 
 TATOEBA_TAR = "https://object.pouta.csc.fi/Tatoeba-Challenge-v2021-08-07/deu-kor.tar"
@@ -134,6 +134,8 @@ def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
             _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=not force_renew
         )
 
+        subtitle_set = subtitle_set.cast_column("id", ClassLabel(num_classes=2, names=["TED", "OpenSubtitles"]))
+
         subtitle_set = subtitle_set.filter(
             lambda ex: len(ex["source"].split()) < 100 and len(ex["target"].split()) < 100,
             num_proc=os.cpu_count(),
@@ -167,6 +169,12 @@ def _clean_examples(example: dict[str, Any]) -> dict[str, Any]:
 
     if example["target"].startswith("-"):
         example["target"] = example["target"][1:]
+
+    if example["id"].startswith("TED"):
+        example["id"] = "TED"
+    
+    if example["id"].startswith("OpenSubtitles"):
+        example["id"] = "OpenSubtitles"
 
     return example
 

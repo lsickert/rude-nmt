@@ -84,7 +84,7 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
         num_proc=os.cpu_count(),
     )
 
-    ds.cast_column(
+    ds = ds.cast_column(
         "ko_formality",
         ClassLabel(
             num_classes=9,
@@ -102,7 +102,7 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
         ),
     )
     if "ko_nmt" in ds.column_names:
-        ds.cast_column(
+        ds = ds.cast_column(
             "ko_nmt_formality",
             ClassLabel(
                 num_classes=9,

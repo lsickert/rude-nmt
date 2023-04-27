@@ -39,14 +39,14 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
         num_proc=os.cpu_count(),
     )
 
-    ds.cast_column(
+    ds = ds.cast_column(
         "de_formality",
         ClassLabel(
             num_classes=4, names=["informal", "formal", "underspecified", "ambiguous"]
         ),
     )
     if "de_formality_nmt" in ds.column_names:
-        ds.cast_column(
+        ds = ds.cast_column(
             "de_formality_nmt",
             ClassLabel(
                 num_classes=4,
