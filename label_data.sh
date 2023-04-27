@@ -18,4 +18,4 @@ module load PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
 # move the cached datasets to the /scratch directory so that we have more space available
 export HF_DATASETS_CACHE="/scratch/$USER/.cache/huggingface/datasets"
 
-python -u main.py --data tatoeba --label_data --force_regenerate --save_csv
+python -u main.py --data tatoeba --label_data --save_csv

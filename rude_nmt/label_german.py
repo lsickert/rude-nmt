@@ -4,7 +4,7 @@ import os
 from typing import Any
 import spacy
 from spacy.tokens import Doc
-from datasets import Dataset
+from datasets import Dataset, ClassLabel
 
 FORMAL_RE = re.compile(
     r"\s(?:(Sie)|(Ihr)|(Ihrer)|(Ihnen)|(Ihre)|(Ihren)|(Euch)|(Euer)|(Eure)|(Euren))\b"
@@ -18,9 +18,19 @@ INFORMAL_RE = re.compile(r"\b[Dd](?:(u)|(ich)|(ir)|(ein)|(eine)|(einen)|(einer))
 def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
     """annotate the German formality of a dataset"""
     print("##### Annotating German POS tags #####")
-    ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen, fn_kwargs={"col": "source"})
+    ds = ds.map(
+        get_pos_tags,
+        batched=True,
+        load_from_cache_file=not force_regen,
+        fn_kwargs={"col": "source"},
+    )
     if "de_nmt" in ds.column_names:
-        ds = ds.map(get_pos_tags, batched=True, load_from_cache_file=not force_regen, fn_kwargs={"col": "de_nmt"})
+        ds = ds.map(
+            get_pos_tags,
+            batched=True,
+            load_from_cache_file=not force_regen,
+            fn_kwargs={"col": "de_nmt"},
+        )
 
     print("##### Annotating German formality #####")
     ds = ds.map(
@@ -28,6 +38,21 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
         load_from_cache_file=not force_regen,
         num_proc=os.cpu_count(),
     )
+
+    ds.cast_column(
+        "de_formality",
+        ClassLabel(
+            num_classes=4, names=["informal", "formal", "underspecified", "ambiguous"]
+        ),
+    )
+    if "de_formality_nmt" in ds.column_names:
+        ds.cast_column(
+            "de_formality_nmt",
+            ClassLabel(
+                num_classes=4,
+                names=["informal", "formal", "underspecified", "ambiguous"],
+            ),
+        )
 
     old_cache = ds.cleanup_cache_files()
 

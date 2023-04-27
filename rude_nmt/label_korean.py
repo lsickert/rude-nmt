@@ -6,7 +6,7 @@ from typing import Optional, Tuple, Any
 import spacy
 from spacy.tokens import Doc
 from jamo import j2hcj
-from datasets import Dataset
+from datasets import Dataset, ClassLabel
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00
@@ -57,7 +57,8 @@ HAECHE_RE = re.compile(
 )
 
 HANNAMUN_TAGS = re.compile(r"pvd|pvg|pad|paa|ef")
-UPOS_TAGS = ["VERB","ADJ"]
+UPOS_TAGS = ["VERB", "ADJ"]
+
 
 def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
     """annotate the Korean formality of a dataset"""
@@ -82,6 +83,42 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
         load_from_cache_file=not force_regen,
         num_proc=os.cpu_count(),
     )
+
+    ds.cast_column(
+        "ko_formality",
+        ClassLabel(
+            num_classes=9,
+            names=[
+                "hasoseoche",
+                "hasipsioche",
+                "haoche",
+                "hageche",
+                "haerache",
+                "hayoche",
+                "haeche",
+                "underspecified",
+                "ambiguous",
+            ],
+        ),
+    )
+    if "ko_nmt" in ds.column_names:
+        ds.cast_column(
+            "ko_nmt_formality",
+            ClassLabel(
+                num_classes=9,
+                names=[
+                    "hasoseoche",
+                    "hasipsioche",
+                    "haoche",
+                    "hageche",
+                    "haerache",
+                    "hayoche",
+                    "haeche",
+                    "underspecified",
+                    "ambiguous",
+                ],
+            ),
+        )
 
     old_cache = ds.cleanup_cache_files()
 
