@@ -49,14 +49,15 @@ HAERACHE_RE = re.compile(
 )
 
 HAEYOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>요|죠)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>요|죠|뇨)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요))\b(?!\s\w)"
 )
 
 HAECHE_RE = re.compile(
     r"\b(?P<stem>\w+)(?:(?P<declInd1>어)|(?P<declInd2>아)|(?P<declInd3>야)|(?P<declConf1>지)|(?P<declConf2>다지)|(?P<declKno>라지)|(?P<declCaus1>거든)|(?P<declCaus2>거들랑)|(?P<declExp>데)|(?P<declAnsw>고)|(?P<declNoAlt>밖에)|(?P<intInd>까)|(?P<intGues>게)|(?P<intTho>레)|(?P<intExp>려나)|(?P<intOp>거나)|(?P<intConf1>다면서)|(?P<intConf2>라면서)|(?P<excImp>구먼)|(?P<excRes>더라니)|(?P<excAdm1>데라니)|(?P<excAdm2>사)|(?P<excSelf>로고)|(?P<prop>자니까)|(?P<objNeg>세말이지)|(?P<monAsk1>다니)|(?P<monAsk2>라니)|(?P<monAdm>걸)|(?P<monEmph1>다니까)|(?P<monEmph2>라니까)|(?P<monDen1>대)|(?P<monDen2>(?<!구)나))\b(?!\s\w)"
 )
 
-HANNAMUN_TAGS = re.compile(r"pvd|pvg|pad|paa")
+HANNAMUN_TAGS = re.compile(r"pvd|pvg|pad|paa|ef")
+UPOS_TAGS = ["VERB","ADJ"]
 
 def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
     """annotate the Korean formality of a dataset"""
@@ -446,7 +447,6 @@ def is_hangul(char: str) -> bool:
 def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
     """get the POS tags of a Korean sentence"""
 
-    spacy.prefer_gpu()
     nlp = spacy.load("ko_core_news_lg", disable=["lemmatizer"])
 
     examples[f"upos_tags_{col}"] = []
