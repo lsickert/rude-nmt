@@ -60,7 +60,9 @@ HANNAMUN_TAGS = re.compile(r"pvd|pvg|pad|paa|ef")
 UPOS_TAGS = ["VERB", "ADJ"]
 
 
-def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
+def annotate_ds(
+    ds: Dataset, rem_ambig: bool = False, force_regen: bool = False
+) -> Dataset:
     """annotate the Korean formality of a dataset"""
     print("##### Annotating Korean POS tags #####")
     ds = ds.map(
@@ -120,6 +122,13 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
             ),
         )
 
+    if rem_ambig:
+        ds = ds.filter(
+            lambda ex: ex["ko_formality"] != "ambiguous",
+            num_proc=os.cpu_count(),
+            load_from_cache_file=not force_regen,
+        )
+
     old_cache = ds.cleanup_cache_files()
 
     print(f"#### removed {old_cache} old cache files ####")
@@ -176,6 +185,12 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
             if is_haeche(example["ws_tokens_target"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
+            # we need this special handling for haeche adjectives because otherwise the pattern would match for a lot of other endings as well
+            # therefore we are only checking for it if no other pattern has been found so far
+            if form is None and example["pos_tags_target"][i] == "paa+ef":
+                if re.search(r"\w(?:다)\b", example["ws_tokens_target"][i]):
+                    form = "haeche"
+
     if form is None:
         form = "underspecified"
 
@@ -190,7 +205,7 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
         for i in range(num_words, -1, -1):
             if (
-                any(HANNAMUN_TAGS.findall(example["pos_tags_target"][i]))
+                any(HANNAMUN_TAGS.findall(example["pos_tags_ko_nmt"][i]))
                 and sent != example["sent_ids_ko_nmt"][i]
             ):
                 sent = example["sent_ids_ko_nmt"][i]
@@ -225,6 +240,12 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
             if is_haeche(example["ws_tokens_ko_nmt"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
+            
+            # we need this special handling for haeche adjectives because otherwise the pattern would match for a lot of other endings as well
+            # therefore we are only checking for it if no other pattern has been found so far
+            if form is None and example["pos_tags_ko_nmt"][i] == "paa+ef":
+                if re.search(r"\w(?:다)\b", example["ws_tokens_ko_nmt"][i]):
+                    form = "haeche"
 
         if form is None:
             form = "underspecified"

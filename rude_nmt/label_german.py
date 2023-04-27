@@ -15,7 +15,9 @@ INFORMAL_RE = re.compile(r"\b[Dd](?:(u)|(ich)|(ir)|(ein)|(eine)|(einen)|(einer))
 """matches any inflection of `du`."""
 
 
-def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
+def annotate_ds(
+    ds: Dataset, rem_ambig: bool = False, force_regen: bool = False
+) -> Dataset:
     """annotate the German formality of a dataset"""
     print("##### Annotating German POS tags #####")
     ds = ds.map(
@@ -52,6 +54,13 @@ def annotate_ds(ds: Dataset, force_regen: bool = False) -> Dataset:
                 num_classes=4,
                 names=["informal", "formal", "underspecified", "ambiguous"],
             ),
+        )
+
+    if rem_ambig:
+        ds = ds.filter(
+            lambda ex: ex["de_formality"] != "ambiguous",
+            num_proc=os.cpu_count(),
+            load_from_cache_file=not force_regen,
         )
 
     old_cache = ds.cleanup_cache_files()

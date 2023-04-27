@@ -115,8 +115,8 @@ if __name__ == "__main__":
             ds.save_to_disk(ds_trans_folder)
 
         if options.label_data:
-            ds = label_german.annotate_ds(ds, options.force_regenerate)
-            ds = label_korean.annotate_ds(ds, options.force_regenerate)
+            ds = label_german.annotate_ds(ds, force_regen=options.force_regenerate)
+            ds = label_korean.annotate_ds(ds, force_regen=options.force_regenerate)
 
             ds.save_to_disk(ds_label_folder)
         else:
