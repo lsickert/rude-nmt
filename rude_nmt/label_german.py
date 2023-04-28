@@ -41,21 +41,6 @@ def annotate_ds(
         num_proc=os.cpu_count(),
     )
 
-    ds = ds.cast_column(
-        "de_formality",
-        ClassLabel(
-            num_classes=4, names=["informal", "formal", "underspecified", "ambiguous"]
-        ),
-    )
-    if "de_formality_nmt" in ds.column_names:
-        ds = ds.cast_column(
-            "de_formality_nmt",
-            ClassLabel(
-                num_classes=4,
-                names=["informal", "formal", "underspecified", "ambiguous"],
-            ),
-        )
-
     if rem_ambig:
         ds = ds.filter(
             lambda ex: ex["de_formality"] != "ambiguous",

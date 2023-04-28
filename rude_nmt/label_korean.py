@@ -86,42 +86,6 @@ def annotate_ds(
         num_proc=os.cpu_count(),
     )
 
-    ds = ds.cast_column(
-        "ko_formality",
-        ClassLabel(
-            num_classes=9,
-            names=[
-                "hasoseoche",
-                "hasipsioche",
-                "haoche",
-                "hageche",
-                "haerache",
-                "haeyoche",
-                "haeche",
-                "underspecified",
-                "ambiguous",
-            ],
-        ),
-    )
-    if "ko_nmt" in ds.column_names:
-        ds = ds.cast_column(
-            "ko_nmt_formality",
-            ClassLabel(
-                num_classes=9,
-                names=[
-                    "hasoseoche",
-                    "hasipsioche",
-                    "haoche",
-                    "hageche",
-                    "haerache",
-                    "haeyoche",
-                    "haeche",
-                    "underspecified",
-                    "ambiguous",
-                ],
-            ),
-        )
-
     if rem_ambig:
         ds = ds.filter(
             lambda ex: ex["ko_formality"] != "ambiguous",
