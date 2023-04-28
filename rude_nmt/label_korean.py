@@ -33,7 +33,7 @@ HASOSEOCHE_RE = re.compile(
 )
 
 HASIPSIOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<intInd>니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>십시다)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<cert>지요|죠)|(?P<intInd>니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>십시다)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
 )
 
 HAOCHE_RE = re.compile(
@@ -49,7 +49,7 @@ HAERACHE_RE = re.compile(
 )
 
 HAEYOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>요|뇨)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요)|(?P<cert>지요|죠)|(?P<prop>시지요|시죠))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>요|뇨)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요)|(?P<prop>시지요|시죠))\b(?!\s\w)"
 )
 
 HAECHE_RE = re.compile(
@@ -96,7 +96,7 @@ def annotate_ds(
                 "haoche",
                 "hageche",
                 "haerache",
-                "hayoche",
+                "haeyoche",
                 "haeche",
                 "underspecified",
                 "ambiguous",
@@ -114,7 +114,7 @@ def annotate_ds(
                     "haoche",
                     "hageche",
                     "haerache",
-                    "hayoche",
+                    "haeyoche",
                     "haeche",
                     "underspecified",
                     "ambiguous",
@@ -180,16 +180,20 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
                 )
 
             if is_haeyoche(example["ws_tokens_target"][i]):
-                form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
+                form = "haeyoche" if (form is None or form == "haeyoche") else "ambiguous"
 
             if is_haeche(example["ws_tokens_target"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
 
-            # we need this special handling for haeche adjectives because otherwise the pattern would match for a lot of other endings as well
+            # we need this special handling for haeche adjectives and some haeyoche
+            # because otherwise the pattern would match for a lot of other endings as well
             # therefore we are only checking for it if no other pattern has been found so far
-            if form is None and example["pos_tags_target"][i] == "paa+ef":
-                if re.search(r"\w(?:다)\b", example["ws_tokens_target"][i]):
-                    form = "haeche"
+            if form is None:
+                if example["pos_tags_target"][i] == "paa+ef":
+                    if re.search(r"\w(?:다)\b", example["ws_tokens_target"][i]):
+                        form = "haeche"
+                if re.search(r"\w(?:지요|죠)\b", example["ws_tokens_target"][i]):
+                    form = "haeyoche"
 
     if form is None:
         form = "underspecified"
@@ -236,16 +240,20 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
                 )
 
             if is_haeyoche(example["ws_tokens_ko_nmt"][i]):
-                form = "hayoche" if (form is None or form == "hayoche") else "ambiguous"
+                form = "haeyoche" if (form is None or form == "haeyoche") else "ambiguous"
 
             if is_haeche(example["ws_tokens_ko_nmt"][i]):
                 form = "haeche" if (form is None or form == "haeche") else "ambiguous"
             
-            # we need this special handling for haeche adjectives because otherwise the pattern would match for a lot of other endings as well
+            # we need this special handling for haeche adjectives and some haeyoche
+            # because otherwise the pattern would match for a lot of other endings as well
             # therefore we are only checking for it if no other pattern has been found so far
-            if form is None and example["pos_tags_ko_nmt"][i] == "paa+ef":
-                if re.search(r"\w(?:다)\b", example["ws_tokens_ko_nmt"][i]):
-                    form = "haeche"
+            if form is None:
+                if example["pos_tags_ko_nmt"][i] == "paa+ef":
+                    if re.search(r"\w(?:다)\b", example["ws_tokens_ko_nmt"][i]):
+                        form = "haeche"
+                if re.search(r"\w(?:지요|죠)\b", example["ws_tokens_ko_nmt"][i]):
+                    form = "haeyoche"
 
         if form is None:
             form = "underspecified"
