@@ -106,7 +106,7 @@ def translate_ds(
             },
             remove_columns=ds.column_names,
         )
-        comet_output = comet_model.predict(comet_ds, batch_size=batch_size, gpus=1 if device == "cuda" else 0)
+        comet_output = comet_model.predict(comet_ds.to_list(), batch_size=batch_size, gpus=1 if device == "cuda" else 0, accelerator=device)
         ds = ds.add_column(name="comet", column=comet_output["scores"])
         print(f"#### COMET Score: {round(comet_output['system_score'],3)}")
 
