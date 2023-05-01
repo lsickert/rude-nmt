@@ -54,7 +54,8 @@ def translate_ds(
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 
-    ds = ds.select(range(64))
+    #for testing
+    #ds = ds.select(range(64))
 
     tokenizer = MBart50TokenizerFast.from_pretrained(
         "facebook/mbart-large-50-many-to-many-mmt", src_lang=LANG_TAG_MAP[src_lang]

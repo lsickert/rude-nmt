@@ -84,10 +84,10 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     if "de_nmt" in example:
         form = None
 
-        if INFORMAL_RE.search(example["nmt_de"]) is not None:
+        if INFORMAL_RE.search(example["de_nmt"]) is not None:
             form = "informal" if form is None else "ambiguous"
 
-        if FORMAL_RE.search(example["nmt_de"]) is not None:
+        if FORMAL_RE.search(example["de_nmt"]) is not None:
             form = "formal" if form is None else "ambiguous"
 
         if form is None:
