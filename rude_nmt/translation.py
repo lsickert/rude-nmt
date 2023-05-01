@@ -86,7 +86,7 @@ def translate_ds(
             get_stat_metrics,
             num_proc=os.cpu_count(),
             load_from_cache_file=not force_regen,
-            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang]},
+            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang], "trg_lang": trg_lang},
         )
         print(f"#### CHRF Score: {round(fmean(ds['chrf']),3)}")
         print(f"#### BLEU Score: {round(fmean(ds['bleu']),3)}")
@@ -189,10 +189,10 @@ def translate_data(
     return trans
 
 
-def get_stat_metrics(example, hyp_col: str, ref_col: str):
+def get_stat_metrics(example, hyp_col: str, ref_col: str, trg_lang: str):
     """get the BLEU and CHRF scores for the given example"""
     chrf = CHRF()
-    bleu = BLEU(effective_order=True)
+    bleu = BLEU(effective_order=True, trg_lang=trg_lang)
     chrf_score = chrf.sentence_score(example[hyp_col], [example[ref_col]])
     bleu_score = bleu.sentence_score(example[hyp_col], [example[ref_col]])
 
