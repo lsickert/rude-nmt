@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=48:00:00
+#SBATCH --time=30:00:00
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=a100:1
 #SBATCH --ntasks=1
@@ -18,4 +18,4 @@ module load PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
 # move the cached datasets to the /scratch directory so that we have more space available
 export HF_DATASETS_CACHE="/scratch/$USER/.cache/huggingface/datasets"
 
-python -u main.py --data tatoeba --translate --src_lang de --trg_lang ko --label_data
+python -u main.py --data tatoeba --translate --src_lang ko --trg_lang de --label_data --force_regenerate

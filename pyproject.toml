@@ -21,6 +21,8 @@ spacy = {version="^3.5.1", extras=["transformers", "ko", "de", "en"]}
 torch = "^1.13.1"
 sentencepiece = "^0.1.98"
 tqdm = "^4.65.0"
+sacrebleu = "^2.3.1"
+unbabel-comet = "^2.0.1"
 
 [tool.poetry.group.dev]
 optional = true
@@ -38,6 +40,7 @@ optional = true
 
 [tool.poetry.group.cuda.dependencies]
 spacy = {version="^3.5.1", extras=["cuda-autodetect"]}
+sacrebleu = {version="^2.3.1", extras=["ko"]}
 
 [tool.poetry.group.apple]
 optional = true

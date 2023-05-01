@@ -1,7 +1,8 @@
 """this module contains functions to generate translations through mbart50"""
 import os
-
+from statistics import fmean
 import torch
+
 # import torch.backends.mps as mps
 import torch.backends.cuda as cuda_back
 import torch.cuda as cuda
@@ -14,7 +15,11 @@ from transformers import (
 )
 from datasets import Dataset
 
+from comet import download_model, load_from_checkpoint
+
 from tqdm.auto import tqdm
+
+from sacrebleu.metrics import CHRF, BLEU
 
 LANG_TAG_MAP = {
     "de": "de_DE",
@@ -39,9 +44,17 @@ def get_device() -> str:
 
 
 def translate_ds(
-    ds: Dataset, src_lang: str, trg_lang: str, batch_size: int = 32, force_regen: bool = False
+    ds: Dataset,
+    src_lang: str,
+    trg_lang: str,
+    batch_size: int = 32,
+    force_regen: bool = False,
+    add_metrics: bool = True,
+    add_neural_metrics: bool = True,
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
+
+    ds = ds.select(range(64))
 
     tokenizer = MBart50TokenizerFast.from_pretrained(
         "facebook/mbart-large-50-many-to-many-mmt", src_lang=LANG_TAG_MAP[src_lang]
@@ -51,91 +64,150 @@ def translate_ds(
         "facebook/mbart-large-50-many-to-many-mmt"
     )
 
-    def tokenize_data(
-        ds: Dataset,
-        tokenizer: MBart50TokenizerFast,
-        batch_size: int,
-        tok_col: str,
-        force_regen: bool = False,
-    ) -> Dataset:
-        """tokenize the dataset using the given tokenizer"""
-
-        def tokenize_function(examples, tok_col: str):
-            tokens = tokenizer(
-                examples[tok_col],
-                truncation=True,
-                max_length=512,
-            )
-            return tokens
-
-        tokenized_ds = ds.map(
-            tokenize_function,
-            batched=True,
-            batch_size=batch_size,
-            num_proc=os.cpu_count(),
-            remove_columns=ds.column_names,
-            fn_kwargs={"tok_col": tok_col},
-            load_from_cache_file=not force_regen,
-        )
-        # interestingly the batching only works correctly when the format is set here instead of inside tokenize_function
-        tokenized_ds.set_format(type="torch", columns=["input_ids", "attention_mask"])
-        return tokenized_ds
-
     print(f"##### Tokenizing {src_lang} sentences #####")
-    tokenized_ds = tokenize_data(ds, tokenizer, batch_size, LANG_COL_MAP[src_lang], force_regen)
+    tokenized_ds = tokenize_data(
+        ds, tokenizer, batch_size, LANG_COL_MAP[src_lang], force_regen
+    )
 
     device = get_device()
     print(f"### using model on {device} ###")
     model.to(device)
 
-    def translate_data(
-        model: MBartForConditionalGeneration,
-        tokenizer: MBart50TokenizerFast,
-        ds: Dataset,
-        batch_size: int,
-        trg_lang: str,
-    ) -> list:
-
-        trans = []
-
-        data_collator = DataCollatorForSeq2Seq(
-            tokenizer, model=model, return_tensors="pt"
-        )
-
-        loaded_ds = DataLoader(ds, batch_size=batch_size, collate_fn=data_collator)
-
-        progress_bar = tqdm(range(len(loaded_ds)))
-
-        model.eval()
-        model.zero_grad()
-
-        for batch in loaded_ds:
-            with torch.no_grad():
-                batch = {k: v.to(device) for k, v in batch.items()}
-
-                batch_len = batch["input_ids"].size(1)
-
-                max_length = 2 * batch_len
-
-                outputs = model.generate(
-                    **batch,
-                    forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang],
-                    max_new_tokens=max_length,
-                )
-
-            batch_trans = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
-            trans.extend(batch_trans)
-
-            progress_bar.update(1)
-
-        progress_bar.close()
-        return trans
-
     print(f"##### Translating {src_lang} sentences to {trg_lang} #####")
-    trans = translate_data(model, tokenizer, tokenized_ds, batch_size, LANG_TAG_MAP[trg_lang])
+    trans = translate_data(
+        model, tokenizer, tokenized_ds, batch_size, LANG_TAG_MAP[trg_lang], device
+    )
 
     col_name = f"{trg_lang}_nmt"
-    ds.add_column(name=col_name, column=trans)
+    ds = ds.add_column(name=col_name, column=trans)
+
+    if add_metrics:
+        ds = ds.map(
+            get_stat_metrics,
+            num_proc=os.cpu_count(),
+            load_from_cache_file=not force_regen,
+            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang]},
+        )
+        print(f"#### CHRF Score: {round(fmean(ds['chrf']),3)}")
+        print(f"#### BLEU Score: {round(fmean(ds['bleu']),3)}")
+
+    if add_neural_metrics:
+        comet_model_path = download_model("Unbabel/wmt22-comet-da")
+        comet_model = load_from_checkpoint(comet_model_path)
+
+        comet_ds = ds.map(
+            get_comet_metrics,
+            num_proc=os.cpu_count(),
+            load_from_cache_file=not force_regen,
+            fn_kwargs={
+                "src_col": LANG_COL_MAP[src_lang],
+                "ref_col": LANG_COL_MAP[trg_lang],
+                "hyp_col": col_name,
+            },
+            remove_columns=ds.column_names,
+        )
+        comet_output = comet_model.predict(comet_ds, batch_size=batch_size, gpus=1 if device == "cuda" else 0)
+        ds = ds.add_column(name="comet", column=comet_output["scores"])
+        print(f"#### COMET Score: {round(comet_output['system_score'],3)}")
 
     return ds
+
+
+def tokenize_data(
+    ds: Dataset,
+    tokenizer: MBart50TokenizerFast,
+    batch_size: int,
+    tok_col: str,
+    force_regen: bool = False,
+) -> Dataset:
+    """tokenize the dataset using the given tokenizer"""
+
+    def tokenize_function(examples, tok_col: str):
+        tokens = tokenizer(
+            examples[tok_col],
+            truncation=True,
+            max_length=512,
+        )
+        return tokens
+
+    tokenized_ds = ds.map(
+        tokenize_function,
+        batched=True,
+        batch_size=batch_size,
+        num_proc=os.cpu_count(),
+        remove_columns=ds.column_names,
+        fn_kwargs={"tok_col": tok_col},
+        load_from_cache_file=not force_regen,
+    )
+    # interestingly the batching only works correctly when the format is set here instead of inside tokenize_function
+    tokenized_ds.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    return tokenized_ds
+
+
+def translate_data(
+    model: MBartForConditionalGeneration,
+    tokenizer: MBart50TokenizerFast,
+    ds: Dataset,
+    batch_size: int,
+    trg_lang: str,
+    device: str = "cpu",
+) -> list:
+    """translate the given dataset using the given model and tokenizer"""
+
+    trans = []
+
+    data_collator = DataCollatorForSeq2Seq(tokenizer, model=model, return_tensors="pt")
+
+    loaded_ds = DataLoader(ds, batch_size=batch_size, collate_fn=data_collator)
+
+    progress_bar = tqdm(range(len(loaded_ds)))
+
+    model.eval()
+    model.zero_grad()
+
+    for batch in loaded_ds:
+        with torch.no_grad():
+            batch = {k: v.to(device) for k, v in batch.items()}
+
+            batch_len = batch["input_ids"].size(1)
+
+            max_length = 2 * batch_len
+
+            outputs = model.generate(
+                **batch,
+                forced_bos_token_id=tokenizer.lang_code_to_id[trg_lang],
+                max_new_tokens=max_length,
+            )
+
+        batch_trans = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+        trans.extend(batch_trans)
+
+        progress_bar.update(1)
+
+    progress_bar.close()
+    return trans
+
+
+def get_stat_metrics(example, hyp_col: str, ref_col: str):
+    """get the BLEU and CHRF scores for the given example"""
+    chrf = CHRF()
+    bleu = BLEU(effective_order=True)
+    chrf_score = chrf.sentence_score(example[hyp_col], [example[ref_col]])
+    bleu_score = bleu.sentence_score(example[hyp_col], [example[ref_col]])
+
+    example["chrf"] = round(chrf_score.score,3)
+    example["bleu"] = round(bleu_score.score,3)
+
+    return example
+
+
+def get_comet_metrics(example, src_col: str, hyp_col: str, ref_col: str):
+    """format the example for use with COMET"""
+    com_sample = {
+        "src": example[src_col],
+        "mt": example[hyp_col],
+        "ref": example[ref_col],
+    }
+
+    return com_sample

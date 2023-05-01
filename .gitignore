@@ -3,6 +3,10 @@
 /data/*
 !/data/iwslt2023
 
+# generally we do not want any of the generated images or csv files in the repository
+*.png
+*.csv
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
 

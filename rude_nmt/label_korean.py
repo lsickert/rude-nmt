@@ -6,7 +6,7 @@ from typing import Optional, Tuple, Any
 import spacy
 from spacy.tokens import Doc
 from jamo import j2hcj
-from datasets import Dataset, ClassLabel
+from datasets import Dataset
 
 # start and end values of the unicode block containing all korean syllables
 U_HAN_START = 0xAC00

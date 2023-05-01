@@ -61,6 +61,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-use_ds",
+    type=str,
+    help="Use the given previously generated dataset for further analysis. Be aware that the data might get overwritten if you run a processing step again.",
+)
+
+parser.add_argument(
     "--save_csv",
     action="store_true",
     default=False,
@@ -74,6 +80,14 @@ if __name__ == "__main__":
     ds = None
     ds_name = options.data
 
+    if options.use_ds:
+        try:
+            ds = load_from_disk(tatoeba.DATA_FOLDER / options.use_ds)
+            ds_name = options.use_ds
+        except FileNotFoundError:
+            print("The specified dataset could not be found.")
+            sys.exit(1)
+
     if options.src_lang and options.trg_lang:
         ds_label_folder = (
             tatoeba.DATA_FOLDER
@@ -83,10 +97,11 @@ if __name__ == "__main__":
         ds_label_folder = tatoeba.DATA_FOLDER / f"{ds_name}_labelled"
 
     if options.data == "tatoeba":
-        tatoeba.preprocess.get_tatoeba(force=options.force_redownload)
 
         print("##### Preprocessing Tatoeba data #####")
-        ds = tatoeba.preprocess.get_subtitle_dataset(options.force_regenerate)
+        if ds is None:
+            tatoeba.preprocess.get_tatoeba(force=options.force_redownload)
+            ds = tatoeba.preprocess.get_subtitle_dataset(options.force_regenerate)
 
         if options.translate:
 
@@ -119,19 +134,12 @@ if __name__ == "__main__":
             ds = label_korean.annotate_ds(ds, force_regen=options.force_regenerate)
 
             ds.save_to_disk(ds_label_folder)
-        else:
-            try:
-                ds = load_from_disk(ds_label_folder)
-            except FileNotFoundError:
-                print(
-                    "No labelled dataset found. Run with --label_data to generate it at least once."
-                )
-                sys.exit(1)
 
     elif options.data == "iwslt":
 
-        print("##### Preprocessing IWSLT data #####")
-        ds = iwslt.preprocess.get_iwslt(options.force_regenerate)
+        if ds is None:
+            print("##### Preprocessing IWSLT data #####")
+            ds = iwslt.preprocess.get_iwslt(options.force_regenerate)
 
         if options.label_data:
             for col in ds.column_names:
@@ -150,15 +158,7 @@ if __name__ == "__main__":
                         fn_kwargs={"col": col},
                     )
 
-            ds.save_to_disk(iwslt.DATA_FOLDER / f"{ds_name}_labelled")
-        else:
-            try:
-                ds = load_from_disk(ds_label_folder)
-            except FileNotFoundError:
-                print(
-                    "No labelled dataset found. Run with --label_data to generate it at least once."
-                )
-                sys.exit(1)
+            ds.save_to_disk(ds_label_folder)
 
     if options.save_csv:
         ds.to_csv(f"./data/{ds_name}_data.csv", num_proc=os.cpu_count())

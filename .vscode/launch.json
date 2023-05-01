@@ -13,7 +13,12 @@
             "justMyCode": false,
             "args": [
                 "--data",
-                "tatoeba"
+                "tatoeba",
+                "--translate",
+                "--src_lang",
+                "ko",
+                "--trg_lang",
+                "de"
             ]
         }
     ]

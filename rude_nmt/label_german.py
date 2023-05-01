@@ -4,14 +4,14 @@ import os
 from typing import Any
 import spacy
 from spacy.tokens import Doc
-from datasets import Dataset, ClassLabel
+from datasets import Dataset
 
 FORMAL_RE = re.compile(
-    r"\s(?:(Sie)|(Ihr)|(Ihrer)|(Ihnen)|(Ihre)|(Ihren)|(Euch)|(Euer)|(Eure)|(Euren))\b"
+    r"\s(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren)\b"
 )
 """matches any capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
 
-INFORMAL_RE = re.compile(r"\b[Dd](?:(u)|(ich)|(ir)|(ein)|(eine)|(einen)|(einer))\b")
+INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer)|euch|euer|eure|euren)\b")
 """matches any inflection of `du`."""
 
 
