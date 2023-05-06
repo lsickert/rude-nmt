@@ -7,11 +7,11 @@ from spacy.tokens import Doc
 from datasets import Dataset
 
 FORMAL_RE = re.compile(
-    r"\s(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren)\b"
+    r"\s(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren|Eures)\b"
 )
 """matches any capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
 
-INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer)|euch|euer|eure|euren)\b")
+INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer|eines)|euch|euer|eure|euren|eures)\b")
 """matches any inflection of `du`."""
 
 
@@ -70,30 +70,43 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
     form = None
 
-    if INFORMAL_RE.search(example["source"]) is not None:
-        form = "informal" if form is None else "ambiguous"
+    num_words = len(example["ws_tokens_source"])
+    form_map = [0] * num_words
 
-    if FORMAL_RE.search(example["source"]) is not None:
-        form = "formal" if form is None else "ambiguous"
+    for i in range(num_words-1, -1, -1):
+
+        if INFORMAL_RE.search(example["ws_tokens_source"][i]) is not None:
+            form = "informal" if (form is None or form == "informal") else "ambiguous"
+            form_map[i] = 1
+
+        if FORMAL_RE.search(example["ws_tokens_source"][i]) is not None:
+            form = "formal" if (form is None or form == "formal") else "ambiguous"
+            form_map[i] = 1
 
     if form is None:
         form = "underspecified"
 
     example["de_formality"] = form
+    example["de_formality_map"] = form_map
 
     if "de_nmt" in example:
         form = None
+        num_words = len(example["ws_tokens_de_nmt"])
+        form_map = [0] * num_words
 
-        if INFORMAL_RE.search(example["de_nmt"]) is not None:
-            form = "informal" if form is None else "ambiguous"
+        for i in range(num_words-1, -1, -1):
 
-        if FORMAL_RE.search(example["de_nmt"]) is not None:
-            form = "formal" if form is None else "ambiguous"
+            if INFORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None:
+                form = "informal" if (form is None or form == "informal") else "ambiguous"
+
+            if FORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None:
+                form = "formal" if (form is None or form == "formal") else "ambiguous"
 
         if form is None:
             form = "underspecified"
 
         example["de_formality_nmt"] = form
+        example["de_formality_map_nmt"] = form_map
 
     return example
 

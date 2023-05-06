@@ -29,11 +29,11 @@ U_KO_INIT_OFFSET = 588
 U_KO_MED_OFFSET = 28
 
 HASOSEOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>나이다)|(?P<decl2>사옵나이다)|(?P<decl3>옵나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>나이다)|(?P<decl2>사옵나이다)|(?P<decl3>옵나이다)|(?P<decl4>삽나이다)|(?P<declRem1>더니이다)|(?P<declRem2>더이다)|(?P<declConj1>사오리이다)|(?P<declConj2>사오리다)|(?P<declConj3>오리이다)|(?P<int1>사옵나이까)|(?P<int2>옵나이까)|(?P<int3>사옵니까)|(?P<int4>옵니까)|(?P<int5>사오니까)|(?P<int6>오니까)|(?P<intInd1>사오리이까)|(?P<intInd2>사오리까)|(?P<intInd3>오리이까)|(?P<intInd4>오리까)|(?P<intAct1>리이까)|(?P<intAct2>리까)|(?P<intRefl1>더니이까)|(?P<intRefl2>더이까)|(?P<imp1>옵소서)|(?P<imp2>소서)|(?P<prop1>사이다))\b(?!\s\w)"
 )
 
 HASIPSIOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<cert>지요|죠)|(?P<intInd>니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>십시다)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<declInd1>니다)|(?P<declInd2>뎁쇼)|(?P<declInd3>옵니다)|(?P<declInd4>사옵니다)|(?P<declDesc>올시다)|(?P<cert>지요|죠)|(?P<intInd>니까)|(?P<intInd2>오니까)|(?P<intInt>리까)|(?P<imp>시오)|(?P<prop1>시지요|시죠)|(?P<prop2>십시다)|(?P<prop3>시라)|(?P<req>시사))\b(?!\s\w)"
 )
 
 HAOCHE_RE = re.compile(
@@ -49,7 +49,7 @@ HAERACHE_RE = re.compile(
 )
 
 HAEYOCHE_RE = re.compile(
-    r"\b(?P<stem>\w+)(?:(?P<decl1>요|뇨)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요)|(?P<prop>시지요|시죠))\b(?!\s\w)"
+    r"\b(?P<stem>\w+)(?:(?P<decl1>요|뇨)|(?P<decl2>이에요)|(?P<decl3>예요)|(?P<imp2>세요)|(?P<imp3>시어요))\b(?!\s\w)"
 )
 
 HAECHE_RE = re.compile(
@@ -108,46 +108,21 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
     form = None
 
-    num_words = len(example["ws_tokens_target"]) - 1
+    num_words = len(example["ws_tokens_target"])
     sent = -1
+    form_map = [0] * num_words
 
-    for i in range(num_words, -1, -1):
+    for i in range(num_words-1, -1, -1):
         if (
             any(HANNAMUN_TAGS.findall(example["pos_tags_target"][i]))
             and sent != example["sent_ids_target"][i]
         ):
             sent = example["sent_ids_target"][i]
 
-            if is_hasoseoche(example["ws_tokens_target"][i]):
-                form = (
-                    "hasoseoche"
-                    if (form is None or form == "hasoseoche")
-                    else "ambiguous"
-                )
-
-            if is_hasipsioche(example["ws_tokens_target"][i]):
-                form = (
-                    "hasipsioche"
-                    if (form is None or form == "hasipsioche")
-                    else "ambiguous"
-                )
-
-            if is_haoche(example["ws_tokens_target"][i]):
-                form = "haoche" if (form is None or form == "haoche") else "ambiguous"
-
-            if is_hageche(example["ws_tokens_target"][i]):
-                form = "hageche" if (form is None or form == "hageche") else "ambiguous"
-
-            if is_haerache(example["ws_tokens_target"][i]):
-                form = (
-                    "haerache" if (form is None or form == "haerache") else "ambiguous"
-                )
-
-            if is_haeyoche(example["ws_tokens_target"][i]):
-                form = "haeyoche" if (form is None or form == "haeyoche") else "ambiguous"
-
-            if is_haeche(example["ws_tokens_target"][i]):
-                form = "haeche" if (form is None or form == "haeche") else "ambiguous"
+            for k, f in FORM_FUNC_MAP.items():
+                if f(example["ws_tokens_target"][i]):
+                    form = k if (form is None or form == k) else "ambiguous"
+                    form_map[i] = 1
 
             # we need this special handling for haeche adjectives and some haeyoche
             # because otherwise the pattern would match for a lot of other endings as well
@@ -163,52 +138,28 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
         form = "underspecified"
 
     example["ko_formality"] = form
+    example["ko_formality_map"] = form_map
 
     if "ko_nmt" in example:
 
         form = None
 
-        num_words = len(example["ws_tokens_ko_nmt"]) - 1
+        num_words = len(example["ws_tokens_ko_nmt"])
         sent = -1
+        form_map = [0] * num_words
 
-        for i in range(num_words, -1, -1):
+        for i in range(num_words-1, -1, -1):
             if (
                 any(HANNAMUN_TAGS.findall(example["pos_tags_ko_nmt"][i]))
                 and sent != example["sent_ids_ko_nmt"][i]
             ):
                 sent = example["sent_ids_ko_nmt"][i]
 
-            if is_hasoseoche(example["ws_tokens_ko_nmt"][i]):
-                form = (
-                    "hasoseoche"
-                    if (form is None or form == "hasoseoche")
-                    else "ambiguous"
-                )
+            for k, f in FORM_FUNC_MAP.items():
+                if f(example["ws_tokens_ko_nmt"][i]):
+                    form = k if (form is None or form == k) else "ambiguous"
+                    form_map[i] = 1
 
-            if is_hasipsioche(example["ws_tokens_ko_nmt"][i]):
-                form = (
-                    "hasipsioche"
-                    if (form is None or form == "hasipsioche")
-                    else "ambiguous"
-                )
-
-            if is_haoche(example["ws_tokens_ko_nmt"][i]):
-                form = "haoche" if (form is None or form == "haoche") else "ambiguous"
-
-            if is_hageche(example["ws_tokens_ko_nmt"][i]):
-                form = "hageche" if (form is None or form == "hageche") else "ambiguous"
-
-            if is_haerache(example["ws_tokens_ko_nmt"][i]):
-                form = (
-                    "haerache" if (form is None or form == "haerache") else "ambiguous"
-                )
-
-            if is_haeyoche(example["ws_tokens_ko_nmt"][i]):
-                form = "haeyoche" if (form is None or form == "haeyoche") else "ambiguous"
-
-            if is_haeche(example["ws_tokens_ko_nmt"][i]):
-                form = "haeche" if (form is None or form == "haeche") else "ambiguous"
-            
             # we need this special handling for haeche adjectives and some haeyoche
             # because otherwise the pattern would match for a lot of other endings as well
             # therefore we are only checking for it if no other pattern has been found so far
@@ -223,6 +174,7 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
             form = "underspecified"
 
         example["ko_formality_nmt"] = form
+        example["ko_formality_map_nmt"] = form_map
 
     return example
 
@@ -289,6 +241,12 @@ def is_haoche(sent: str) -> bool:
         if match["decExp"] is not None:
             chars = separate_syllable(match["stem"][-1])
             if chars is not None and chars[2] is not None and j2hcj(chars[2]) == "ㅂ":
+                return True
+            else:
+                return False
+        elif match["decKno1"] is not None:
+            chars = separate_syllable(match["stem"][-1])
+            if chars is not None and chars[2] is not None and j2hcj(chars[2]) == "ㄴ":
                 return True
             else:
                 return False
@@ -453,6 +411,16 @@ def is_haeche(sent: str) -> bool:
 
     return False
 
+
+FORM_FUNC_MAP = {
+    "hasoseoche": is_hasoseoche,
+    "hasipsioche": is_hasipsioche,
+    "haoche": is_haoche,
+    "hageche": is_hageche,
+    "haerache": is_haerache,
+    "haeyoche": is_haeyoche,
+    "haeche": is_haeche,
+}
 
 # see e.g. https://en.wikipedia.org/wiki/Korean_language_and_computers#Hangul_in_Unicode on how hangul syllables and individual characters can be converted
 def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:

@@ -83,21 +83,24 @@ def translate_ds(
     ds = ds.add_column(name=col_name, column=trans)
 
     if add_metrics:
+        print("##### adding statistical metrics #####")
+        chrf = CHRF()
+        bleu = BLEU(effective_order=True, trg_lang=trg_lang)
         ds = ds.map(
             get_stat_metrics,
-            num_proc=os.cpu_count(),
             load_from_cache_file=not force_regen,
-            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang], "trg_lang": trg_lang},
+            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang], "chrf_func": chrf, "bleu_func": bleu},
         )
         print(f"#### CHRF Score: {round(fmean(ds['chrf']),3)}")
         print(f"#### BLEU Score: {round(fmean(ds['bleu']),3)}")
 
     if add_neural_metrics:
+        print("##### adding neural metrics #####")
         comet_model_path = download_model("Unbabel/wmt22-comet-da")
         comet_model = load_from_checkpoint(comet_model_path)
 
         comet_ds = ds.map(
-            get_comet_metrics,
+            get_comet_format,
             num_proc=os.cpu_count(),
             load_from_cache_file=not force_regen,
             fn_kwargs={
@@ -190,12 +193,11 @@ def translate_data(
     return trans
 
 
-def get_stat_metrics(example, hyp_col: str, ref_col: str, trg_lang: str):
+def get_stat_metrics(example, hyp_col: str, ref_col: str, chrf_func: CHRF, bleu_func: BLEU):
     """get the BLEU and CHRF scores for the given example"""
-    chrf = CHRF()
-    bleu = BLEU(effective_order=True, trg_lang=trg_lang)
-    chrf_score = chrf.sentence_score(example[hyp_col], [example[ref_col]])
-    bleu_score = bleu.sentence_score(example[hyp_col], [example[ref_col]])
+
+    chrf_score = chrf_func.sentence_score(example[hyp_col], [example[ref_col]])
+    bleu_score = bleu_func.sentence_score(example[hyp_col], [example[ref_col]])
 
     example["chrf"] = round(chrf_score.score,3)
     example["bleu"] = round(bleu_score.score,3)
@@ -203,7 +205,7 @@ def get_stat_metrics(example, hyp_col: str, ref_col: str, trg_lang: str):
     return example
 
 
-def get_comet_metrics(example, src_col: str, hyp_col: str, ref_col: str):
+def get_comet_format(example, src_col: str, hyp_col: str, ref_col: str):
     """format the example for use with COMET"""
     com_sample = {
         "src": example[src_col],
