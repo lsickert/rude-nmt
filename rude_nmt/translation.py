@@ -111,7 +111,7 @@ def translate_ds(
             remove_columns=ds.column_names,
         )
         comet_output = comet_model.predict(comet_ds.to_list(), batch_size=batch_size, gpus=1 if device == "cuda" else 0, accelerator=device)
-        ds = ds.add_column(name="comet", column=comet_output["scores"])
+        ds = ds.add_column(name=f"comet_{trg_lang}", column=round(comet_output["scores"],3))
         print(f"#### COMET Score: {round(comet_output['system_score'],3)}")
 
     return ds
@@ -193,14 +193,14 @@ def translate_data(
     return trans
 
 
-def get_stat_metrics(example, hyp_col: str, ref_col: str, chrf_func: CHRF, bleu_func: BLEU):
+def get_stat_metrics(example, hyp_col: str, ref_col: str, trg_lang: str, chrf_func: CHRF, bleu_func: BLEU):
     """get the BLEU and CHRF scores for the given example"""
 
     chrf_score = chrf_func.sentence_score(example[hyp_col], [example[ref_col]])
     bleu_score = bleu_func.sentence_score(example[hyp_col], [example[ref_col]])
 
-    example["chrf"] = round(chrf_score.score,3)
-    example["bleu"] = round(bleu_score.score,3)
+    example[f"chrf_{trg_lang}"] = round(chrf_score.score,3)
+    example[f"bleu_{trg_lang}"] = round(bleu_score.score,3)
 
     return example
 
