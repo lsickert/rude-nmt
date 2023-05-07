@@ -61,7 +61,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-use_ds",
+    "--use_ds",
     type=str,
     help="Use the given previously generated dataset for further analysis. Be aware that the data might get overwritten if you run a processing step again.",
 )
