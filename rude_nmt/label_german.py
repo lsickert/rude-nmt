@@ -7,7 +7,7 @@ from spacy.tokens import Doc
 from datasets import Dataset
 
 FORMAL_RE = re.compile(
-    r"\s(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren|Eures)\b"
+    r"\b(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren|Eures)\b"
 )
 """matches any capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
 
@@ -79,7 +79,8 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
             form = "informal" if (form is None or form == "informal") else "ambiguous"
             form_map[i] = 1
 
-        if FORMAL_RE.search(example["ws_tokens_source"][i]) is not None:
+        not_sent_begin = i > 0 and example["sent_ids_source"][i-1] == example["sent_ids_source"][i]
+        if FORMAL_RE.search(example["ws_tokens_source"][i]) is not None and not_sent_begin:
             form = "formal" if (form is None or form == "formal") else "ambiguous"
             form_map[i] = 1
 
@@ -99,7 +100,8 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
             if INFORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None:
                 form = "informal" if (form is None or form == "informal") else "ambiguous"
 
-            if FORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None:
+            not_sent_begin = i > 0 and example["sent_ids_de_nmt"][i-1] == example["sent_ids_de_nmt"][i]
+            if FORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None and not_sent_begin:
                 form = "formal" if (form is None or form == "formal") else "ambiguous"
 
         if form is None:
