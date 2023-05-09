@@ -29,10 +29,10 @@ def plot_translation_metrics(
     plt.xlabel("Score")
     plt.ylabel("Percentage of sentences")
 
+    plt.savefig(f"{plt_name}.png", bbox_inches="tight")
+
     if show:
         plt.show()
-
-    plt.savefig(f"{plt_name}.png", bbox_inches="tight")
     plt.close()
 
 
