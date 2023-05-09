@@ -20,7 +20,10 @@ def get_one_word_sentences(
 
 
 def get_formality_plot(
-    ds: Dataset, form_col: str, exclude_vals: Optional[list] = None, ax_annotate_vals: tuple = (0.16, 8000)
+    ds: Dataset,
+    form_col: str,
+    exclude_vals: Optional[list] = None,
+    ax_annotate_vals: tuple = (0.16, 8000),
 ) -> None:
     """plot the distribution of formality labels in the dataset"""
     df = ds.to_pandas()
@@ -48,6 +51,9 @@ def get_cross_formality_plot(
     exclude_vals: Optional[list] = None,
     form_col_desc: str = None,
     cross_col_desc: str = None,
+    plot_title: str = "form_distribution",
+    label_x: float = 3.7,
+    label_y: float = 0.475,
 ) -> None:
     """plot the cross-distribution of formality labels in the dataset"""
     df = ds.to_pandas()
@@ -63,15 +69,22 @@ def get_cross_formality_plot(
     plt.xlabel("Percentage of sentences")
     if form_col_desc is not None:
         plt.ylabel(form_col_desc)
-    
+
     if cross_col_desc is not None:
         plt.legend(title=cross_col_desc)
 
     for n, x in enumerate([*cross_form.index.values]):
-        for (proportion, y_loc) in zip(cross_form.loc[x], cross_form.loc[x].cumsum()):
-            plt.text(
-                x=(y_loc - proportion) + (proportion / 3.7),
-                y=n - 0.475,
-                s=f"{np.round(proportion*100, 1)}%",
-            )
-    plt.savefig("form_distr.png", bbox_inches="tight")
+        previous_x_pos = -1
+        for (proportion, x_loc) in zip(cross_form.loc[x], cross_form.loc[x].cumsum()):
+            x_pos = round((x_loc - proportion) + (proportion / label_x),1)
+            if x_pos <= previous_x_pos:
+                x_pos += 0.1
+            previous_x_pos = x_pos
+            prop_label = np.round(proportion*100, 1)
+            if prop_label != 0.0:
+                plt.text(
+                    x=x_pos,
+                    y=n - label_y,
+                    s=f"{prop_label}%",
+                )
+    plt.savefig(f"{plot_title}.png", bbox_inches="tight")
