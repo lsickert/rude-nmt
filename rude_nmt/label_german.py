@@ -7,11 +7,11 @@ from spacy.tokens import Doc
 from datasets import Dataset
 
 FORMAL_RE = re.compile(
-    r"\b(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihres|Euch|Euer|Eure|Euren|Eures)\b"
+    r"\b(?:Sie|Ihr|Ihrer|Ihnen|Ihre|Ihren|Ihrem|Ihres|Euch|Euer|Eure|Euren|Eures)\b"
 )
 """matches any capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
 
-INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer|eines)|euch|euer|eure|euren|eures)\b")
+INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer|eines|einem|eins)|euch|euer|eure|euren|eures)\b")
 """matches any inflection of `du`."""
 
 
