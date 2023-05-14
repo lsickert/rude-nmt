@@ -54,11 +54,13 @@ def translate_ds(
 ) -> Dataset:
     """translate the given dataset using the pretrained model"""
 
-    #for testing
-    #ds = ds.select(range(64))
+    # for testing
+    # ds = ds.select(range(64))
 
     tokenizer = MBart50TokenizerFast.from_pretrained(
-        "facebook/mbart-large-50-many-to-many-mmt", src_lang=LANG_TAG_MAP[src_lang]
+        "facebook/mbart-large-50-many-to-many-mmt",
+        src_lang=LANG_TAG_MAP[src_lang],
+        tgt_lang=LANG_TAG_MAP[trg_lang],
     )
 
     model = MBartForConditionalGeneration.from_pretrained(
@@ -89,7 +91,12 @@ def translate_ds(
         ds = ds.map(
             get_stat_metrics,
             load_from_cache_file=not force_regen,
-            fn_kwargs={"hyp_col": col_name, "ref_col": LANG_COL_MAP[trg_lang], "chrf_func": chrf, "bleu_func": bleu},
+            fn_kwargs={
+                "hyp_col": col_name,
+                "ref_col": LANG_COL_MAP[trg_lang],
+                "chrf_func": chrf,
+                "bleu_func": bleu,
+            },
         )
         print(f"#### CHRF Score: {round(fmean(ds['chrf']),3)}")
         print(f"#### BLEU Score: {round(fmean(ds['bleu']),3)}")
@@ -110,8 +117,15 @@ def translate_ds(
             },
             remove_columns=ds.column_names,
         )
-        comet_output = comet_model.predict(comet_ds.to_list(), batch_size=batch_size, gpus=1 if device == "cuda" else 0, accelerator=device)
-        ds = ds.add_column(name=f"comet_{trg_lang}", column=round(comet_output["scores"],3))
+        comet_output = comet_model.predict(
+            comet_ds.to_list(),
+            batch_size=batch_size,
+            gpus=1 if device == "cuda" else 0,
+            accelerator=device,
+        )
+        ds = ds.add_column(
+            name=f"comet_{trg_lang}", column=round(comet_output["scores"], 3)
+        )
         print(f"#### COMET Score: {round(comet_output['system_score'],3)}")
 
     return ds
@@ -193,14 +207,16 @@ def translate_data(
     return trans
 
 
-def get_stat_metrics(example, hyp_col: str, ref_col: str, trg_lang: str, chrf_func: CHRF, bleu_func: BLEU):
+def get_stat_metrics(
+    example, hyp_col: str, ref_col: str, trg_lang: str, chrf_func: CHRF, bleu_func: BLEU
+):
     """get the BLEU and CHRF scores for the given example"""
 
     chrf_score = chrf_func.sentence_score(example[hyp_col], [example[ref_col]])
     bleu_score = bleu_func.sentence_score(example[hyp_col], [example[ref_col]])
 
-    example[f"chrf_{trg_lang}"] = round(chrf_score.score,3)
-    example[f"bleu_{trg_lang}"] = round(bleu_score.score,3)
+    example[f"chrf_{trg_lang}"] = round(chrf_score.score, 3)
+    example[f"bleu_{trg_lang}"] = round(bleu_score.score, 3)
 
     return example
 

@@ -14,11 +14,14 @@
             "args": [
                 "--data",
                 "tatoeba",
-                "--translate",
+                "--attribute",
+                "input_x_gradient",
                 "--src_lang",
-                "ko",
+                "de",
                 "--trg_lang",
-                "de"
+                "ko",
+                "--use_ds",
+                "tatoeba_filtered"
             ]
         }
     ]

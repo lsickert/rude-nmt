@@ -3,9 +3,10 @@ import os
 import sys
 import argparse
 from datasets import load_from_disk
+import inseq
 import tatoeba
 import iwslt
-from rude_nmt import label_german, label_korean, translation
+from rude_nmt import label_german, label_korean, translation, attribute
 
 DATA = ["tatoeba", "iwslt"]
 LANGUAGES = ["de", "ko"]
@@ -61,6 +62,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--attribute",
+    choices=inseq.list_feature_attribution_methods(),
+    help="Attribute the dataset with the following method",
+)
+
+parser.add_argument(
     "--use_ds",
     type=str,
     help="Use the given previously generated dataset for further analysis. Be aware that the data might get overwritten if you run a processing step again.",
@@ -93,8 +100,13 @@ if __name__ == "__main__":
             tatoeba.DATA_FOLDER
             / f"{ds_name}_{options.src_lang}_{options.trg_lang}_labelled"
         )
+        ds_attrib_folder = (
+            tatoeba.DATA_FOLDER
+            / f"{ds_name}_{options.src_lang}_{options.trg_lang}_attributed"
+        )
     else:
         ds_label_folder = tatoeba.DATA_FOLDER / f"{ds_name}_labelled"
+        ds_attrib_folder = tatoeba.DATA_FOLDER / f"{ds_name}_attributed"
 
     if options.data == "tatoeba":
 
@@ -134,6 +146,24 @@ if __name__ == "__main__":
             ds = label_korean.annotate_ds(ds, force_regen=options.force_regenerate)
 
             ds.save_to_disk(ds_label_folder)
+
+        if options.attribute:
+
+            if not options.src_lang or not options.trg_lang:
+                print(
+                    "Source and target language must be specified in order to carry out the attribution"
+                )
+                sys.exit(1)
+
+            if options.src_lang == options.trg_lang:
+                print("Source and target language must be different")
+                sys.exit(1)
+
+            ds = attribute.attribute_ds(
+                ds, options.src_lang, options.trg_lang, options.attribute
+            )
+
+            ds.save_to_disk(ds_attrib_folder)
 
     elif options.data == "iwslt":
 

@@ -22,8 +22,10 @@ def get_one_word_sentences(
 def get_formality_plot(
     ds: Dataset,
     form_col: str,
+    plt_name: Optional[str] = None,
     exclude_vals: Optional[list] = None,
     ax_annotate_vals: tuple = (0.16, 8000),
+    save: bool = True,
 ) -> None:
     """plot the distribution of formality labels in the dataset"""
     df = ds.to_pandas()
@@ -41,19 +43,24 @@ def get_formality_plot(
         )
 
     fig = ax.get_figure()
-    fig.savefig(f"{form_col}.png", bbox_inches="tight")
+    if save:
+        if plt_name is None:
+            plt_name = form_col
+        fig.savefig(f"{plt_name}.png", bbox_inches="tight")
 
 
 def get_cross_formality_plot(
     ds: Dataset,
     form_col: str,
     cross_col: str,
+    plt_name: Optional[str] = None,
     exclude_vals: Optional[list] = None,
     form_col_desc: str = None,
     cross_col_desc: str = None,
     plot_title: str = "form_distribution",
     label_x: float = 3.7,
     label_y: float = 0.475,
+    save: bool = True,
 ) -> None:
     """plot the cross-distribution of formality labels in the dataset"""
     df = ds.to_pandas()
@@ -87,4 +94,7 @@ def get_cross_formality_plot(
                     y=n - label_y,
                     s=f"{prop_label}%",
                 )
-    plt.savefig(f"{plot_title}.png", bbox_inches="tight")
+    if save:
+        if plt_name is None:
+            plt_name = plot_title
+        plt.savefig(f"{plt_name}.png", bbox_inches="tight")
