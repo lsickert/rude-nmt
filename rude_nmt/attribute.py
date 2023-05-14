@@ -15,7 +15,7 @@ def attribute_ds(
     src_lang: str,
     trg_lang: str,
     attribution_method: str,
-    batch_size: int = 32,
+    batch_size: int = 16,
     attribute_target: bool = False,
 ) -> Dataset:
     """attribute the dataset using the given attribution_method"""
