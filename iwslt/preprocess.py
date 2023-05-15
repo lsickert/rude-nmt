@@ -1,4 +1,5 @@
 """methods to load the iwslt dataset"""
+import re
 from pathlib import Path
 from datasets import Dataset, load_from_disk
 
@@ -25,6 +26,8 @@ def get_iwslt(force_renew: bool = False) -> Dataset:
 
         dataset = Dataset.from_generator(_dataset_gen, gen_kwargs={"cat": cats})
 
+        dataset = dataset.map(_get_formality_map, load_from_cache_file=not force_renew)
+
         dataset.save_to_disk(iwslt_ds_folder)
 
     else:
@@ -35,6 +38,22 @@ def get_iwslt(force_renew: bool = False) -> Dataset:
     print(f"#### removed {old_cache} old cache files ####")
 
     return dataset
+
+
+def _get_formality_map(example):
+    """get the formality map of a single sample"""
+    for key in list(example.keys()):
+        if "formal" in key:
+            ws_tokens = example[key].split()
+            form_map = [0] * len(ws_tokens)
+            for i, word in enumerate(ws_tokens):
+                if re.search(r"\[F\].+\[/F\]", word):
+                    form_map[i] = 1
+            example[f"ws_form_map_{key}"] = form_map
+            example[key] = example[key].replace("[F]", "").replace("[/F]", "")
+            example[f"ws_{key}"] = example[key].split()
+
+    return example
 
 
 def _dataset_gen(cat: list) -> dict:

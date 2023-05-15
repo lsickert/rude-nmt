@@ -34,6 +34,8 @@ def attribute_ds(
         },
     )
 
+    print(f"##### attributing model on {model.device} with method {attribution_method}")
+
     # create the aggregator
     aggregator = AggregatorPipeline([SubwordAggregator, SequenceAttributionAggregator])
 
@@ -45,7 +47,7 @@ def attribute_ds(
             attribute_target=attribute_target,
             batch_size=batch_size,
             step_scores=["probability"],
-            pretty_progress=False,
+            show_progress=False,
             device=inseq.utils.get_default_device(),
         )
 

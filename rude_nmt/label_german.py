@@ -4,6 +4,7 @@ import os
 from typing import Any
 import spacy
 from spacy.tokens import Doc
+from spacy.training import Alignment
 from datasets import Dataset
 
 FORMAL_RE = re.compile(
@@ -11,7 +12,9 @@ FORMAL_RE = re.compile(
 )
 """matches any capitalized inflection of `Sie` unless it occurs at the beginning of a sentence."""
 
-INFORMAL_RE = re.compile(r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer|eines|einem|eins)|euch|euer|eure|euren|eures)\b")
+INFORMAL_RE = re.compile(
+    r"\b(?:[Dd](?:u|ich|ir|ein|eine|einen|einer|eines|einem|eins)|euch|euer|eure|euren|eures)\b"
+)
 """matches any inflection of `du`."""
 
 
@@ -73,14 +76,19 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     num_words = len(example["ws_tokens_source"])
     form_map = [0] * num_words
 
-    for i in range(num_words-1, -1, -1):
+    for i in range(num_words - 1, -1, -1):
 
         if INFORMAL_RE.search(example["ws_tokens_source"][i]) is not None:
             form = "informal" if (form is None or form == "informal") else "ambiguous"
             form_map[i] = 1
 
-        not_sent_begin = i > 0 and example["sent_ids_source"][i-1] == example["sent_ids_source"][i]
-        if FORMAL_RE.search(example["ws_tokens_source"][i]) is not None and not_sent_begin:
+        not_sent_begin = (
+            i > 0 and example["sent_ids_source"][i - 1] == example["sent_ids_source"][i]
+        )
+        if (
+            FORMAL_RE.search(example["ws_tokens_source"][i]) is not None
+            and not_sent_begin
+        ):
             form = "formal" if (form is None or form == "formal") else "ambiguous"
             form_map[i] = 1
 
@@ -95,13 +103,21 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
         num_words = len(example["ws_tokens_de_nmt"])
         form_map = [0] * num_words
 
-        for i in range(num_words-1, -1, -1):
+        for i in range(num_words - 1, -1, -1):
 
             if INFORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None:
-                form = "informal" if (form is None or form == "informal") else "ambiguous"
+                form = (
+                    "informal" if (form is None or form == "informal") else "ambiguous"
+                )
 
-            not_sent_begin = i > 0 and example["sent_ids_de_nmt"][i-1] == example["sent_ids_de_nmt"][i]
-            if FORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None and not_sent_begin:
+            not_sent_begin = (
+                i > 0
+                and example["sent_ids_de_nmt"][i - 1] == example["sent_ids_de_nmt"][i]
+            )
+            if (
+                FORMAL_RE.search(example["ws_tokens_de_nmt"][i]) is not None
+                and not_sent_begin
+            ):
                 form = "formal" if (form is None or form == "formal") else "ambiguous"
 
         if form is None:
@@ -123,11 +139,31 @@ def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
     examples[f"ws_tokens_{col}"] = []
     examples[f"sent_ids_{col}"] = []
 
-    for doc in nlp.pipe(examples[col]):
+    if f"ws_form_map_{col}" in examples:
+        examples[f"form_map_{col}"] = []
+
+    for i, doc in enumerate(nlp.pipe(examples[col])):
         examples[f"upos_tags_{col}"].append([token.pos_ for token in doc])
         examples[f"pos_tags_{col}"].append([token.tag_ for token in doc])
         examples[f"ws_tokens_{col}"].append([token.text for token in doc])
         examples[f"sent_ids_{col}"].append(get_sent_id(doc))
+
+        if f"ws_form_map_{col}" in examples and f"ws_{col}" in examples:
+            alignment = Alignment.from_strings(
+                examples[f"ws_{col}"][i], [token.text for token in doc]
+            )
+            examples[f"form_map_{col}"].append(
+                [
+                    examples[f"ws_form_map_{col}"][i][k]
+                    if alignment.y2x.data[j - 1] != k
+                    else 0
+                    for j, k in enumerate(alignment.y2x.data)
+                ]
+            )
+
+    if f"ws_form_map_{col}" in examples:
+        del examples[f"ws_form_map_{col}"]
+        del examples[f"ws_{col}"]
 
     return examples
 

@@ -5,6 +5,7 @@ from math import floor
 from typing import Optional, Tuple, Any
 import spacy
 from spacy.tokens import Doc
+from spacy.training import Alignment
 from jamo import j2hcj
 from datasets import Dataset
 
@@ -112,7 +113,7 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     sent = -1
     form_map = [0] * num_words
 
-    for i in range(num_words-1, -1, -1):
+    for i in range(num_words - 1, -1, -1):
         if (
             any(HANNAMUN_TAGS.findall(example["pos_tags_target"][i]))
             and sent != example["sent_ids_target"][i]
@@ -148,7 +149,7 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
         sent = -1
         form_map = [0] * num_words
 
-        for i in range(num_words-1, -1, -1):
+        for i in range(num_words - 1, -1, -1):
             if (
                 any(HANNAMUN_TAGS.findall(example["pos_tags_ko_nmt"][i]))
                 and sent != example["sent_ids_ko_nmt"][i]
@@ -452,11 +453,31 @@ def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
     examples[f"ws_tokens_{col}"] = []
     examples[f"sent_ids_{col}"] = []
 
-    for doc in nlp.pipe(examples[col]):
+    if f"ws_form_map_{col}" in examples:
+        examples[f"form_map_{col}"] = []
+
+    for i, doc in enumerate(nlp.pipe(examples[col])):
         examples[f"upos_tags_{col}"].append([token.pos_ for token in doc])
         examples[f"pos_tags_{col}"].append([token.tag_ for token in doc])
         examples[f"ws_tokens_{col}"].append([token.text for token in doc])
         examples[f"sent_ids_{col}"].append(get_sent_id(doc))
+
+        if f"ws_form_map_{col}" in examples and f"ws_{col}" in examples:
+            alignment = Alignment.from_strings(
+                examples[f"ws_{col}"][i], [token.text for token in doc]
+            )
+            examples[f"form_map_{col}"].append(
+                [
+                    examples[f"ws_form_map_{col}"][i][k]
+                    if alignment.y2x.data[j - 1] != k
+                    else 0
+                    for j, k in enumerate(alignment.y2x.data)
+                ]
+            )
+    
+    if f"ws_form_map_{col}" in examples:
+        del examples[f"ws_form_map_{col}"]
+        del examples[f"ws_{col}"]
 
     return examples
 

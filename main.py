@@ -177,14 +177,14 @@ if __name__ == "__main__":
 
         if options.label_data:
             for col in ds.column_names:
-                if col.endswith("_de"):
+                if col.endswith("_de") and not col.startswith("ws_"):
                     ds = ds.map(
                         label_german.get_pos_tags,
                         batched=True,
                         load_from_cache_file=not options.force_regenerate,
                         fn_kwargs={"col": col},
                     )
-                elif col.endswith("_ko"):
+                elif col.endswith("_ko") and not col.startswith("ws_"):
                     ds = ds.map(
                         label_korean.get_pos_tags,
                         batched=True,
