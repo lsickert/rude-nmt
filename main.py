@@ -160,7 +160,11 @@ if __name__ == "__main__":
                 sys.exit(1)
 
             ds = attribute.attribute_ds(
-                ds, options.src_lang, options.trg_lang, options.attribute
+                ds,
+                options.src_lang,
+                options.trg_lang,
+                options.attribute,
+                force_regen=options.force_regenerate,
             )
 
             ds.save_to_disk(ds_attrib_folder)

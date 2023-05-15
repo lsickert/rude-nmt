@@ -15,8 +15,9 @@ def attribute_ds(
     src_lang: str,
     trg_lang: str,
     attribution_method: str,
-    batch_size: int = 16,
+    batch_size: int = 32,
     attribute_target: bool = False,
+    force_regen: bool = False,
 ) -> Dataset:
     """attribute the dataset using the given attribution_method"""
 
@@ -36,36 +37,43 @@ def attribute_ds(
     # create the aggregator
     aggregator = AggregatorPipeline([SubwordAggregator, SequenceAttributionAggregator])
 
-    attributions = model.attribute(
-        input_texts=ds[LANG_COL_MAP[src_lang]],
-        generated_texts=ds[f"{trg_lang}_nmt"],
-        attribute_target=attribute_target,
-        batch_size=batch_size,
-        step_scores=["probability"],
-        pretty_progress=False,
-        device=inseq.utils.get_default_device(),
-    )
+    def attribute_samples(samples):
 
-    attributions = attributions.aggregate(aggregator=aggregator)
+        attributions = model.attribute(
+            input_texts=samples[LANG_COL_MAP[src_lang]],
+            generated_texts=samples[f"{trg_lang}_nmt"],
+            attribute_target=attribute_target,
+            batch_size=batch_size,
+            step_scores=["probability"],
+            pretty_progress=False,
+            device=inseq.utils.get_default_device(),
+        )
 
-    src_attributions = []
-    step_scores = []
-    trg_attributions = []
+        attributions = attributions.aggregate(aggregator=aggregator)
 
-    for attr in attributions.sequence_attributions:
-        src_attributions.append(attr.source_attributions[1:-1].T[1:-1].tolist())
-        step_scores.append(attr.step_scores["probability"].tolist())
+        src_attributions = []
+        step_scores = []
+        trg_attributions = []
+
+        for attr in attributions.sequence_attributions:
+            src_attributions.append(attr.source_attributions[1:-1].T[1:-1].tolist())
+            step_scores.append(attr.step_scores["probability"].tolist())
+            if attribute_target:
+                trg_attributions.append(attr.target_attributions[1:-1].T[1:-1].tolist())
+
+        samples[f"{trg_lang}_src_attributions"] = src_attributions
+        samples[f"{trg_lang}_step_scores"] = step_scores
+
         if attribute_target:
-            trg_attributions.append(attr.target_attributions[1:-1].T[1:-1].tolist())
+            samples[f"{trg_lang}_trg_attributions"] = trg_attributions
 
-    col_name = f"{trg_lang}_src_attributions"
-    ds = ds.add_column(name=col_name, column=src_attributions)
+        return samples
 
-    col_name = f"{trg_lang}_step_scores"
-    ds = ds.add_column(name=col_name, column=step_scores)
-
-    if attribute_target:
-        col_name = f"{trg_lang}_trg_attributions"
-        ds = ds.add_column(name=col_name, column=trg_attributions)
+    ds = ds.map(
+        attribute_samples,
+        batched=True,
+        batch_size=batch_size,
+        load_from_cache_file=not force_regen,
+    )
 
     return ds
