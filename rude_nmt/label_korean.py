@@ -2,7 +2,7 @@
 import re
 import os
 from math import floor
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, Union
 import spacy
 from spacy.tokens import Doc
 from spacy.training import Alignment
@@ -438,16 +438,22 @@ def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:
         return None
 
 
-def is_korean_sent(sentence: str, cutoff: float = 0.5) -> bool:
-    """determines if a sentence is Korean based on the ratio of words starting with hangul characters"""
+def is_korean_sent(sentence: Union[list, str], cutoff: float = 0.49) -> bool:
+    """determines if a sentence is Korean based on the ratio of words ending with hangul characters"""
     han_count = 0
-    for word in sentence.split():
-        if is_hangul(word[0]):
+    if not isinstance(sentence, list):
+        sentence = sentence.split()
+
+    for word in sentence:
+        if is_hangul(word[-1]):
             han_count += 1
 
-    if han_count / len(sentence.split()) >= cutoff:
-        return True
-    else:
+    try:
+        if han_count / len(sentence) >= cutoff:
+            return True
+        else:
+            return False
+    except ZeroDivisionError:
         return False
 
 
