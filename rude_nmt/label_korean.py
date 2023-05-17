@@ -438,6 +438,19 @@ def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:
         return None
 
 
+def is_korean_sent(sentence: str, cutoff: float = 0.5) -> bool:
+    """determines if a sentence is Korean based on the ratio of words starting with hangul characters"""
+    han_count = 0
+    for word in sentence.split():
+        if is_hangul(word[0]):
+            han_count += 1
+
+    if han_count / len(sentence.split()) >= cutoff:
+        return True
+    else:
+        return False
+
+
 def is_hangul(char: str) -> bool:
     """check if a character is within the unicode range for hangul characters"""
     return U_HAN_START <= ord(char) <= U_HAN_END
@@ -474,7 +487,7 @@ def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
                     for j, k in enumerate(alignment.y2x.data)
                 ]
             )
-    
+
     if f"ws_form_map_{col}" in examples:
         del examples[f"ws_form_map_{col}"]
         del examples[f"ws_{col}"]
