@@ -39,43 +39,61 @@ def attribute_ds(
     # create the aggregator
     aggregator = AggregatorPipeline([SubwordAggregator, SequenceAttributionAggregator])
 
-    def attribute_samples(samples):
-
-        attributions = model.attribute(
-            input_texts=samples[LANG_COL_MAP[src_lang]],
-            generated_texts=samples[f"{trg_lang}_nmt"],
-            attribute_target=attribute_target,
-            batch_size=batch_size,
-            step_scores=["probability"],
-            show_progress=False,
-            device=inseq.utils.get_default_device(),
-        )
-
-        attributions = attributions.aggregate(aggregator=aggregator)
-
-        src_attributions = []
-        step_scores = []
-        trg_attributions = []
-
-        for attr in attributions.sequence_attributions:
-            src_attributions.append(attr.source_attributions[1:-1].T[1:-1].tolist())
-            step_scores.append(attr.step_scores["probability"].tolist())
-            if attribute_target:
-                trg_attributions.append(attr.target_attributions[1:-1].T[1:-1].tolist())
-
-        samples[f"{trg_lang}_src_attributions"] = src_attributions
-        samples[f"{trg_lang}_step_scores"] = step_scores
-
-        if attribute_target:
-            samples[f"{trg_lang}_trg_attributions"] = trg_attributions
-
-        return samples
-
     ds = ds.map(
         attribute_samples,
         batched=True,
-        batch_size=batch_size,
+        batch_size=1000,
         load_from_cache_file=not force_regen,
+        fn_kwargs={
+            "model": model,
+            "aggregator": aggregator,
+            "src_lang": src_lang,
+            "trg_lang": trg_lang,
+            "batch_size": batch_size,
+            "attribute_target": attribute_target,
+        },
     )
 
     return ds
+
+
+def attribute_samples(
+    samples,
+    model: inseq.AttributionModel,
+    aggregator: AggregatorPipeline,
+    src_lang: str,
+    trg_lang: str,
+    batch_size: int,
+    attribute_target: bool = False,
+):
+    """attribute a batch of samples using the given model and aggregator"""
+
+    attributions = model.attribute(
+        input_texts=samples[LANG_COL_MAP[src_lang]],
+        generated_texts=samples[f"{trg_lang}_nmt"],
+        attribute_target=attribute_target,
+        batch_size=batch_size,
+        step_scores=["probability"],
+        show_progress=False,
+        device=inseq.utils.get_default_device(),
+    )
+
+    attributions = attributions.aggregate(aggregator=aggregator)
+
+    src_attributions = []
+    step_scores = []
+    trg_attributions = []
+
+    for attr in attributions.sequence_attributions:
+        src_attributions.append(attr.source_attributions[1:-1].T[1:-1].tolist())
+        step_scores.append(attr.step_scores["probability"].tolist())
+        if attribute_target:
+            trg_attributions.append(attr.target_attributions[1:-1].T[1:-1].tolist())
+
+    samples[f"{trg_lang}_src_attributions"] = src_attributions
+    samples[f"{trg_lang}_step_scores"] = step_scores
+
+    if attribute_target:
+        samples[f"{trg_lang}_trg_attributions"] = trg_attributions
+
+    return samples
