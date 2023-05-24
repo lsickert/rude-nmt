@@ -1,6 +1,6 @@
 """provides functions to analyze and visualize the tatoeba dataset"""
 import re
-from typing import Optional
+from typing import Optional, Union
 from datasets import Dataset
 import pandas as pd
 import numpy as np
@@ -21,20 +21,37 @@ def get_one_word_sentences(
 
 def get_formality_plot(
     ds: Dataset,
-    form_col: str,
+    form_col: Union[list[str], str],
     plt_name: Optional[str] = None,
     exclude_vals: Optional[list] = None,
     ax_annotate_vals: tuple = (0.16, 8000),
+    col_titles: Optional[list] = None,
     save: bool = True,
+    horizontal_x: bool = False,
 ) -> None:
     """plot the distribution of formality labels in the dataset"""
     df = ds.to_pandas()
-    df[form_col].astype("category")
-    if exclude_vals is not None:
-        df = df[~df[form_col].isin(exclude_vals)]
+
+    if isinstance(form_col, str):
+        form_col = [form_col]
+
+    for col in form_col:
+        df[col].astype("category")
+
+        if exclude_vals is not None:
+            df = df[~df[col].isin(exclude_vals)]
+
     rows = len(df.index)
-    ax = df[form_col].value_counts().plot(kind="bar")
+    ax = df[form_col].apply(pd.Series.value_counts).plot(kind="bar")
     ax.set_ylabel("Number of Sentences")
+    ax.set_ylim(0, len(df.index))
+
+    if col_titles is not None:
+        ax.legend(col_titles)
+
+    if horizontal_x:
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+
     for p in ax.patches:
         b = p.get_bbox()
         ax.annotate(
