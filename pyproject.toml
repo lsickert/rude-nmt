@@ -24,6 +24,7 @@ tqdm = "^4.65.0"
 sacrebleu = "^2.3.1"
 unbabel-comet = "^2.0.1"
 d3blocks = "^1.2.11"
+scikit-learn = "^1.2.2"
 
 [tool.poetry.group.dev]
 optional = true

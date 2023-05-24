@@ -1,8 +1,13 @@
 """provides analysis functions for the annotated datasets"""
+from typing import Optional
+import math
 from datasets import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from d3blocks import D3Blocks
+from sklearn.metrics import classification_report
+from scipy.stats import chi2_contingency
 
 
 def plot_translation_metrics(
@@ -75,3 +80,42 @@ def plot_sankey(
         showfig=show,
         figsize=(800, 600),
     )
+
+
+def get_classification_report(
+    ds: Dataset, label_col: str, pred_col: str, output_dict: bool = True
+):
+    """get a classification report for the given dataset"""
+
+    y_true = ds[label_col]
+    y_pred = ds[pred_col]
+
+    return classification_report(
+        y_true, y_pred, digits=2, output_dict=output_dict, zero_division=0
+    )
+
+
+def get_cramers_v(
+    ds: Dataset, form_col: str, cross_col: str, exclude_vals: Optional[list] = None
+):
+    """get the Cramer's V value for the given dataset"""
+
+    df = ds.to_pandas()
+    df[form_col].astype("category")
+    df[cross_col].astype("category")
+    if exclude_vals is not None:
+        df = df[~df[form_col].isin(exclude_vals)]
+        df = df[~df[cross_col].isin(exclude_vals)]
+
+    cross_form = pd.crosstab(df[form_col], df[cross_col])
+
+    chi2 = chi2_contingency(cross_form)[0]
+
+    n = np.sum(cross_form.values)
+    phi2 = chi2 / n
+    r, k = cross_form.shape
+    phi2corr = max(0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
+    rcorr = r - ((r - 1) ** 2) / (n - 1)
+    kcorr = k - ((k - 1) ** 2) / (n - 1)
+
+    return np.sqrt(phi2corr / min((kcorr - 1), (rcorr - 1)))
