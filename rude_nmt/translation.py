@@ -98,8 +98,14 @@ def translate_ds(
                 "bleu_func": bleu,
             },
         )
-        print(f"#### CHRF Score: {round(fmean(ds['chrf']),3)}")
-        print(f"#### BLEU Score: {round(fmean(ds['bleu']),3)}")
+        corpus_bleu = bleu.corpus_score(
+            ds[col_name], [ds[LANG_COL_MAP[trg_lang]]]
+        ).score
+        corpus_chrf = chrf.corpus_score(
+            ds[col_name], [ds[LANG_COL_MAP[trg_lang]]]
+        ).score
+        print(f"#### CHRF Score: {corpus_bleu}")
+        print(f"#### BLEU Score: {corpus_chrf}")
 
     if add_neural_metrics:
         print("##### adding neural metrics #####")
@@ -230,3 +236,41 @@ def get_comet_format(example, src_col: str, hyp_col: str, ref_col: str):
     }
 
     return com_sample
+
+
+def get_translation_metrics(
+    ds, src_col: str, ref_col: str, hyp_col: str, trg_lang: str
+) -> dict:
+    """helper function to calculate the BLEU, chrF and COMET score for a subset of the full dataset"""
+    bleu = BLEU(trg_lang=trg_lang)
+    chrf = CHRF()
+
+    corpus_bleu = bleu.corpus_score(ds[hyp_col], [ds[ref_col]]).score
+    corpus_chrf = chrf.corpus_score(ds[hyp_col], [ds[ref_col]]).score
+
+    comet_model_path = download_model("Unbabel/wmt22-comet-da")
+    comet_model = load_from_checkpoint(comet_model_path)
+
+    comet_ds = ds.map(
+        get_comet_format,
+        num_proc=os.cpu_count(),
+        fn_kwargs={
+            "src_col": src_col,
+            "ref_col": ref_col,
+            "hyp_col": hyp_col,
+        },
+        remove_columns=ds.column_names,
+    )
+
+    comet_output = comet_model.predict(
+        comet_ds.to_list(),
+        batch_size=32,
+        gpus=1 if get_device() == "cuda" else 0,
+        accelerator=get_device(),
+    )
+
+    return {
+        "bleu": corpus_bleu,
+        "chrf": corpus_chrf,
+        "comet": round(comet_output["system_score"], 3)
+    }
