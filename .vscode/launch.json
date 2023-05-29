@@ -10,18 +10,12 @@
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
             "args": [
                 "--data",
-                "tatoeba",
-                "--attribute",
-                "input_x_gradient",
-                "--src_lang",
-                "de",
-                "--trg_lang",
-                "ko",
-                "--use_ds",
-                "tatoeba_filtered"
+                "iwslt",
+                "--label_data",
+                "--force_regenerate"
             ]
         }
     ]

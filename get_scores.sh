@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=32GB
-#SBATCH --job-name=label_data
+#SBATCH --job-name=get_scores
 
 module purge
 
