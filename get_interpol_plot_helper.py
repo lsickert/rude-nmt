@@ -191,7 +191,7 @@ if __name__ == "__main__":
                 input_texts=inputs,
                 generation_args=generation_args,
                 attribute_target=False,
-                batch_size=8,
+                batch_size=4,
             )
 
             source_attr = [
