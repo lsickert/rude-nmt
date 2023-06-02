@@ -191,7 +191,9 @@ if __name__ == "__main__":
                 input_texts=inputs,
                 generation_args=generation_args,
                 attribute_target=False,
-                batch_size=4,
+                batch_size=8,
+                show_progress=False,
+                device=inseq.utils.get_default_device(),
             )
 
             source_attr = [
