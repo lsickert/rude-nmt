@@ -1,4 +1,4 @@
-"""helper functions that can be run indendently of the main script"""
+"""helper function to recalculate the translation metrics that can be run indendently of the main script"""
 from datasets import load_from_disk
 from rude_nmt import translation
 from tatoeba import DATA_FOLDER
