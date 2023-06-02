@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=32GB
-#SBATCH --job-name=get_scores
+#SBATCH --job-name=make_interpolation_plots
 
 module purge
 
@@ -18,4 +18,4 @@ module load PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
 # move the cached datasets to the /scratch directory so that we have more space available
 export HF_DATASETS_CACHE="/scratch/$USER/.cache/huggingface/datasets"
 
-python -u get_interplo_plot_helper.py
+python -u get_interpol_plot_helper.py
