@@ -172,7 +172,7 @@ if __name__ == "__main__":
                 )
 
             inputs = (
-                ds[0:1600][combination[3]]
+                ds[0:1000][combination[3]]
                 if combination[2] == "tatoeba"
                 else iwslt_en_only[combination[3]]
             )
@@ -181,7 +181,8 @@ if __name__ == "__main__":
                 {
                     "forced_bos_token_id": inseq_model.tokenizer.lang_code_to_id[
                         combination[1]
-                    ]
+                    ],
+                    "max_new_tokens": 100,
                 }
                 if combination[0] is not None
                 else {}

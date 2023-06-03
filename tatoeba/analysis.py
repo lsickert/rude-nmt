@@ -36,7 +36,7 @@ def get_formality_plot(
         form_col = [form_col]
 
     for col in form_col:
-        df[col].astype("category")
+        df[col] = df[col].astype("category")
 
         if exclude_vals is not None:
             df = df[~df[col].isin(exclude_vals)]
@@ -63,7 +63,7 @@ def get_formality_plot(
     if save:
         if plt_name is None:
             plt_name = form_col
-        fig.savefig(f"{plt_name}.png", bbox_inches="tight")
+        fig.savefig(f"./plots/{plt_name}.png", bbox_inches="tight")
 
 
 def get_cross_formality_plot(
@@ -81,8 +81,8 @@ def get_cross_formality_plot(
 ) -> None:
     """plot the cross-distribution of formality labels in the dataset"""
     df = ds.to_pandas()
-    df[form_col].astype("category")
-    df[cross_col].astype("category")
+    df[form_col] = df[form_col].astype("category")
+    df[cross_col] = df[cross_col].astype("category")
     if exclude_vals is not None:
         df = df[~df[form_col].isin(exclude_vals)]
         df = df[~df[cross_col].isin(exclude_vals)]
@@ -114,4 +114,4 @@ def get_cross_formality_plot(
     if save:
         if plt_name is None:
             plt_name = plot_title
-        plt.savefig(f"{plt_name}.png", bbox_inches="tight")
+        plt.savefig(f"./plots/{plt_name}.png", bbox_inches="tight")

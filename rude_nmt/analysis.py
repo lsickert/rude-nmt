@@ -9,6 +9,25 @@ from d3blocks import D3Blocks
 from sklearn.metrics import classification_report
 from scipy.stats import chi2_contingency
 
+ko_order = [
+    "hasoseoche",
+    "hasipsioche",
+    "haeyoche",
+    "haoche",
+    "hageche",
+    "haerache",
+    "haeche",
+    "underspecified",
+    "ambiguous",
+]
+
+de_order = [
+    "formal",
+    "informal",
+    "underspecified",
+    "ambiguous",
+]
+
 
 def plot_translation_metrics(
     ds: Dataset,
@@ -34,7 +53,7 @@ def plot_translation_metrics(
     plt.xlabel("Score")
     plt.ylabel("Percentage of sentences")
 
-    plt.savefig(f"{plt_name}.png", bbox_inches="tight")
+    plt.savefig(f"./plots/{plt_name}.png", bbox_inches="tight")
 
     if show:
         plt.show()
@@ -45,16 +64,22 @@ def plot_sankey(
     ds: Dataset,
     source_col: str,
     target_col: str,
+    language: str,
     plt_name: str = "sankey",
     show: bool = True,
 ):
     """plot a sankey of two columns against each other"""
     df = ds.to_pandas()
-    df[source_col].astype("category")
-    df[target_col].astype("category")
     df = df[[source_col, target_col]]
 
     df = df.groupby([source_col, target_col], as_index=False).size()
+
+    order = ko_order if language == "ko" else de_order
+
+    df[source_col] = df[source_col].astype(pd.CategoricalDtype(order, ordered=True))
+    df[target_col] = df[target_col].astype(pd.CategoricalDtype(order, ordered=True))
+
+    df = df.sort_values(by=[source_col, target_col])
 
     df.rename(
         columns={source_col: "source", target_col: "target", "size": "weight"},
@@ -62,6 +87,8 @@ def plot_sankey(
     )
 
     df = df.fillna(0)
+
+    df.to_csv(f"./plots/{plt_name}.csv")
 
     # add a space to the end of the target column to avoid circular link errors because of same values as in the source column
     def add_suffix(val):
@@ -76,7 +103,7 @@ def plot_sankey(
     d3.sankey(
         df,
         title=plt_name.capitalize(),
-        filepath=f"./{plt_name}.html",
+        filepath=f"./plots/{plt_name}.html",
         showfig=show,
         figsize=(800, 600),
     )
@@ -101,8 +128,8 @@ def get_cramers_v(
     """get the Cramer's V value for the given dataset"""
 
     df = ds.to_pandas()
-    df[form_col].astype("category")
-    df[cross_col].astype("category")
+    df[form_col] = df[form_col].astype("category")
+    df[cross_col] = df[cross_col].astype("category")
     if exclude_vals is not None:
         df = df[~df[form_col].isin(exclude_vals)]
         df = df[~df[cross_col].isin(exclude_vals)]
