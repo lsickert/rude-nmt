@@ -17,6 +17,14 @@
                 "--label_data",
                 "--force_regenerate"
             ]
+        },
+        {
+            "name": "Debug Plots",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/get_interpol_plot_helper.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
         }
     ]
 }

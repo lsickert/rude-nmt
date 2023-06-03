@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from iwslt import preprocess
 from tatoeba import DATA_FOLDER
+from tqdm.auto import tqdm
 
 
 def create_interpolation_plot_single(
@@ -103,7 +104,7 @@ def format_sentence(target_sent: list[TokenWithId]) -> str:
     """create a sentence from the target tokens"""
     sent = ""
     for token in target_sent:
-        sent += " " + token.token[1:] if token.startswith("_") else token.token
+        sent += " " + token.token[1:] if token.token.startswith("_") else token.token
     return sent
 
 
@@ -167,7 +168,7 @@ if __name__ == "__main__":
                     "attention",
                     tokenizer_kwargs={
                         "src_lang": combination[0],
-                        "trg_lang": combination[1],
+                        "tgt_lang": combination[1],
                     },
                 )
 
@@ -190,23 +191,34 @@ if __name__ == "__main__":
             source_attr = []
             target_sents = []
 
-            for text in inputs:
+            def batch(li, n=1):
+                l = len(li)
+                for ndx in range(0, l, n):
+                    yield li[ndx : min(ndx + n, l)]
 
-                out = inseq_model.attribute(
-                    input_texts=text,
-                    generation_args=generation_args,
-                    attribute_target=False,
-                    show_progress=False,
-                    device=inseq.utils.get_default_device(),
-                )
+            with tqdm(total=len(list(batch(inputs, 32))), desc=combination[4]) as pbar:
+                for texts in batch(inputs, 32):
 
-                source_attr.extend(
-                    [attr.source_attributions for attr in out.sequence_attributions]
-                )
-                
-                target_sents.extend(
-                    [format_sentence(attr.target) for attr in out.sequence_attributions]
-                )
+                    out = inseq_model.attribute(
+                        input_texts=texts,
+                        generation_args=generation_args,
+                        attribute_target=False,
+                        show_progress=False,
+                        batch_size=8,
+                        device=inseq.utils.get_default_device(),
+                    )
+
+                    source_attr.extend(
+                        [attr.source_attributions for attr in out.sequence_attributions]
+                    )
+
+                    target_sents.extend(
+                        [
+                            format_sentence(attr.target)
+                            for attr in out.sequence_attributions
+                        ]
+                    )
+                    pbar.update(1)
 
             attr_merged = format_attributions(source_attr)
 
