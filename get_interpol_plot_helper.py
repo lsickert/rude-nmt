@@ -190,13 +190,12 @@ if __name__ == "__main__":
             source_attr = []
             target_sents = []
 
-            def attribute(input, gen_args, attr_model):
+            for text in inputs:
 
-                out = attr_model.attribute(
-                    input_texts=input,
-                    generation_args=gen_args,
+                out = inseq_model.attribute(
+                    input_texts=text,
+                    generation_args=generation_args,
                     attribute_target=False,
-                    batch_size=8,
                     show_progress=False,
                     device=inseq.utils.get_default_device(),
                 )
@@ -204,17 +203,10 @@ if __name__ == "__main__":
                 source_attr.extend(
                     [attr.source_attributions for attr in out.sequence_attributions]
                 )
+                
                 target_sents.extend(
                     [format_sentence(attr.target) for attr in out.sequence_attributions]
                 )
-
-            inputs.map(
-                attribute,
-                batched=True,
-                batch_size=32,
-                show_progress=True,
-                fn_kwargs={"gen_args": generation_args, "model": inseq_model},
-            )
 
             attr_merged = format_attributions(source_attr)
 
