@@ -172,7 +172,7 @@ if __name__ == "__main__":
                 )
 
             inputs = (
-                ds[0:1000][combination[3]]
+                ds[0:1600][combination[3]]
                 if combination[2] == "tatoeba"
                 else iwslt_en_only[combination[3]]
             )
@@ -187,22 +187,34 @@ if __name__ == "__main__":
                 if combination[0] is not None
                 else {}
             )
+            source_attr = []
+            target_sents = []
 
-            out = inseq_model.attribute(
-                input_texts=inputs,
-                generation_args=generation_args,
-                attribute_target=False,
-                batch_size=8,
-                show_progress=False,
-                device=inseq.utils.get_default_device(),
+            def attribute(input, gen_args, attr_model):
+
+                out = attr_model.attribute(
+                    input_texts=input,
+                    generation_args=gen_args,
+                    attribute_target=False,
+                    batch_size=8,
+                    show_progress=False,
+                    device=inseq.utils.get_default_device(),
+                )
+
+                source_attr.extend(
+                    [attr.source_attributions for attr in out.sequence_attributions]
+                )
+                target_sents.extend(
+                    [format_sentence(attr.target) for attr in out.sequence_attributions]
+                )
+
+            inputs.map(
+                attribute,
+                batched=True,
+                batch_size=32,
+                show_progress=True,
+                fn_kwargs={"gen_args": generation_args, "model": inseq_model},
             )
-
-            source_attr = [
-                attr.source_attributions for attr in out.sequence_attributions
-            ]
-            target_sents = [
-                format_sentence(attr.target) for attr in out.sequence_attributions
-            ]
 
             attr_merged = format_attributions(source_attr)
 
