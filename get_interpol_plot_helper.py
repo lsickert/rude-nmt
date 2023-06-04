@@ -10,9 +10,9 @@ from inseq.utils.typing import TokenWithId
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from tqdm.auto import tqdm
 from iwslt import preprocess
 from tatoeba import DATA_FOLDER
-from tqdm.auto import tqdm
 
 
 def create_interpolation_plot_single(
@@ -150,7 +150,7 @@ if __name__ == "__main__":
             ],
         },
         {
-            "id": "Helsinki-NLP/opus-mt-en-ko",
+            "id": "Helsinki-NLP/opus-mt-tc-big-en-ko",
             "combinations": [
                 (None, None, "iwslt", "en", "OPUS EN -> KO"),
             ],
