@@ -196,8 +196,8 @@ if __name__ == "__main__":
                 for ndx in range(0, l, n):
                     yield li[ndx : min(ndx + n, l)]
 
-            with tqdm(total=len(list(batch(inputs, 16))), desc=combination[4]) as pbar:
-                for texts in batch(inputs, 16):
+            with tqdm(total=len(list(batch(inputs, 8))), desc=combination[4]) as pbar:
+                for texts in batch(inputs, 8):
 
                     out = inseq_model.attribute(
                         input_texts=texts,
