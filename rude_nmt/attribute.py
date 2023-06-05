@@ -6,6 +6,10 @@ from inseq.data.aggregator import (
     SubwordAggregator,
 )
 from datasets import Dataset
+from spacy.training import Alignment
+import numpy as np
+import pandas as pd
+from tqdm.auto import tqdm
 
 from .translation import LANG_TAG_MAP, LANG_COL_MAP
 
@@ -90,10 +94,80 @@ def attribute_samples(
         if attribute_target:
             trg_attributions.append(attr.target_attributions[1:-1].T[1:-1].tolist())
 
-    samples[f"{trg_lang}_src_attributions"] = src_attributions
+    samples[f"{trg_lang}_cross_attributions"] = src_attributions
     samples[f"{trg_lang}_step_scores"] = step_scores
 
     if attribute_target:
         samples[f"{trg_lang}_trg_attributions"] = trg_attributions
 
     return samples
+
+
+def align_tokenizations_to_spacy(example, split_col, spacy_col, alignment_col):
+    """align the feature-attribution tokenizations (whitespace-split) to the spacy tokenizations"""
+    alignment = Alignment.from_strings(example[split_col].split(), example[spacy_col])
+    aligned = []
+    align_idx = 0
+    for i in alignment.x2y.lengths:
+        next_idx = align_idx + i
+        aligned.append(example[alignment_col][alignment.x2y.data[align_idx]])
+        align_idx = next_idx
+    return aligned
+
+
+def map_align_tokenizations(example, split_col, spacy_col, alignment_col):
+    example[f"{alignment_col}_aligned"] = align_tokenizations_to_spacy(
+        example, split_col, spacy_col, alignment_col
+    )
+    return example
+
+
+def get_avg_pos_attr(
+    ds: Dataset,
+    split_col_src: str,
+    spacy_col_src: str,
+    pos_col_src: str,
+    split_col_trg: str,
+    spacy_col_trg: str,
+    form_map_trg: str,
+    attribute_col: str,
+):
+    all_pos = {}
+    form_tokens_per_sent = []
+    with tqdm(total=len(ds), desc="getting avg pos attr") as pbar:
+        for example in ds:
+            form_map_aligned = align_tokenizations_to_spacy(
+                example, split_col_trg, spacy_col_trg, form_map_trg
+            )
+            form_tokens_per_sent.append(np.sum(form_map_aligned).astype(int))
+            aligned_pos = align_tokenizations_to_spacy(
+                example, split_col_src, spacy_col_src, pos_col_src
+            )
+            attr_form_filtered = [
+                example[attribute_col][idx]
+                for idx, f in enumerate(form_map_aligned)
+                if f != 0
+            ]
+
+            if len(attr_form_filtered) == 0:
+                pbar.update(1)
+                continue
+
+            if len(attr_form_filtered[0]) != len(aligned_pos):
+                pbar.update(1)
+                continue
+
+            for attr in attr_form_filtered:
+                df = pd.DataFrame({"pos": aligned_pos, "attr": attr})
+                df = df.groupby("pos").max()
+                for idx, row in df.iterrows():
+                    if idx not in all_pos:
+                        all_pos[idx] = []
+                    all_pos[idx].append(row["attr"])
+            pbar.update(1)
+
+    num_formality_tokens = np.sum(form_tokens_per_sent).astype(int)
+    for key in all_pos:
+        all_pos[key] = round(np.sum(all_pos[key]) / num_formality_tokens, 3)
+
+    return all_pos
