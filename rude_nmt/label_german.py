@@ -109,6 +109,7 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
                 form = (
                     "informal" if (form is None or form == "informal") else "ambiguous"
                 )
+                form_map[i] = 1
 
             not_sent_begin = (
                 i > 0
@@ -119,6 +120,7 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
                 and not_sent_begin
             ):
                 form = "formal" if (form is None or form == "formal") else "ambiguous"
+                form_map[i] = 1
 
         if form is None:
             form = "underspecified"
