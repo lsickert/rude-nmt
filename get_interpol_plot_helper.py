@@ -97,7 +97,7 @@ def format_attributions(
 
     arr = np.flip(scaled, axis=0)
 
-    return arr
+    return arr.tolist()
 
 
 def format_sentence(target_sent: list[TokenWithId]) -> str:
