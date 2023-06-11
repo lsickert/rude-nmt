@@ -2,8 +2,10 @@
 
 /data/*
 !/data/iwslt2023
+/plots/*
+!/plots/.gitkeep
 
-# generally we do not want any of the generated plats or csv files in the repository
+# generally we do not want any of the generated plots or csv files in the repository
 *.png
 *.csv
 *.html

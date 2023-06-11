@@ -171,3 +171,98 @@ def get_avg_pos_attr(
         all_pos[key] = round(np.sum(all_pos[key]) / num_formality_tokens, 3)
 
     return all_pos
+
+
+def perform_contrastive_attr(
+    ds: Dataset,
+    source_col: str,
+    target_col: str,
+    contrast_col: str,
+    src_lang: str,
+    trg_lang: str,
+    attribution_method: str,
+    force_regen: bool = False,
+):
+    """perform contrastive attribution on the dataset"""
+
+    model = inseq.load_model(
+        "facebook/mbart-large-50-many-to-many-mmt",
+        attribution_method,
+        tokenizer_kwargs={
+            "src_lang": LANG_TAG_MAP[src_lang],
+            "tgt_lang": LANG_TAG_MAP[trg_lang],
+        },
+    )
+
+    ds = ds.filter(
+        _filter_sentences_for_contrast,
+        fn_kwargs={
+            "model": model,
+            "target_col": target_col,
+            "contrast_col": contrast_col,
+        },
+        load_from_cache_file=not force_regen,
+    )
+
+    ds = ds.map(
+        _get_contrastive_attr,
+        fn_kwargs={
+            "model": model,
+            "source_col": source_col,
+            "target_col": target_col,
+            "contrast_col": contrast_col,
+        },
+        load_from_cache_file=not force_regen,
+    )
+
+    return ds
+
+
+def _get_contrastive_attr(
+    example: dict,
+    model: inseq.AttributionModel,
+    source_col: str,
+    target_col: str,
+    contrast_col: str,
+) -> dict:
+    """perform contrastive attribution on the given example"""
+
+    contrast = model.encode(example[contrast_col], as_targets=True)
+
+    out = model.attribute(
+        input_texts=example[source_col],
+        generated_texts=example[target_col],
+        attributed_fn="contrast_prob_diff",
+        step_scores=["contrast_prob_diff", "probability"],
+        contrast_ids=contrast.input_ids,
+        contrast_attention_mask=contrast.attention_mask,
+        show_progress=False,
+    )
+
+    out.weight_attributions("contrast_prob_diff")
+
+    example["contrastive_attr"] = out.sequence_attributions[
+        0
+    ].source_attributions.T.tolist()
+    example["contrastive_prob"] = (
+        out.sequence_attributions[0].step_scores["contrast_prob_diff"].tolist()
+    )
+    example["attr_prob"] = (
+        out.sequence_attributions[0].step_scores["probability"].tolist()
+    )
+
+    return example
+
+
+def _filter_sentences_for_contrast(
+    example: dict, model: inseq.AttributionModel, target_col: str, contrast_col: str
+) -> dict:
+    formal = model.encode(example[target_col], as_targets=True)
+    informal = model.encode(example[contrast_col], as_targets=True)
+
+    if len(formal.input_tokens[0]) == len(informal.input_tokens[0]):
+        for i in range(len(formal.input_tokens[0])):
+            if formal.input_tokens[0][i] != informal.input_tokens[0][i]:
+                return True
+
+    return False
