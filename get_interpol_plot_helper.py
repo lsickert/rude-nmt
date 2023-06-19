@@ -49,7 +49,7 @@ def create_interpolation_plot_multi(
 
     for col in range(3):
         for row in range(4):
-            plot_id = col * 3 + row
+            plot_id = row * 3 + col
             pcm = ax[row, col].pcolormesh(
                 plot_list[plot_id]["merged_attributions"], vmin=0, vmax=1, cmap="Reds"
             )

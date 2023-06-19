@@ -218,6 +218,97 @@ def perform_contrastive_attr(
     return ds
 
 
+def get_contr_pos_tag_attr(ds: Dataset, model: inseq.AttributionModel, src_col: str):
+    """retrieve the attribution per POS tag for the contrastive dataset"""
+    pos_attr = {}
+
+    for example in ds:
+        clean_src_tokens = [
+            tok.replace("▁", " ")
+            for tok in model.encode(example[src_col]).input_tokens[0][1:-1]
+        ]
+
+        aligned = Alignment.from_strings(
+            clean_src_tokens, example[f"ws_tokens_{src_col}"]
+        )
+
+        contr_idx = 0
+
+        for idx, prob in enumerate(example["contrastive_prob"]):
+            if prob != 0.0:
+                contr_idx = idx
+                break
+
+        clean_src_attr = example["contrastive_attr"][contr_idx][1:-1]
+
+        aligned_idx = []
+        for idx, i in enumerate(aligned.x2y.lengths):
+            if i == 0:
+                continue
+            aligned_idx.append(idx)
+
+        aligned_attr_list = []
+        pos_list = []
+        aligned_clean_src_tokens = []
+        for idx, i in enumerate(aligned_idx):
+            aligned_attr_list.append(clean_src_attr[i])
+            aligned_clean_src_tokens.append(clean_src_tokens[i])
+            pos_list.append(example[f"upos_tags_{src_col}"][aligned.x2y.data[idx]])
+
+        df = pd.DataFrame({"pos": pos_list, "attr": aligned_attr_list})
+        # df = df.groupby("pos").max()
+        df = df.loc[df.groupby("pos")["attr"].idxmax()]
+
+        for idx, row in df.iterrows():
+            if row["pos"] not in pos_attr:
+                pos_attr[row["pos"]] = []
+            pos_attr[row["pos"]].append(row["attr"])
+
+    for key in pos_attr:
+        pos_attr[key] = round(np.sum(pos_attr[key]) / len(ds), 3)
+
+    return pos_attr
+
+
+def get_max_contr_pos_tags(ds: Dataset, model: inseq.AttributionModel, src_col: str):
+    all_pos_list = []
+
+    for example in ds:
+        clean_src_tokens = [
+            tok.replace("▁", " ")
+            for tok in model.encode(example[src_col]).input_tokens[0][1:-1]
+        ]
+
+        aligned = Alignment.from_strings(
+            clean_src_tokens, example[f"ws_tokens_{src_col}"]
+        )
+
+        contr_idx = 0
+
+        for idx, prob in enumerate(example["contrastive_prob"]):
+            if prob != 0.0:
+                contr_idx = idx
+                break
+
+        clean_src_attr = example["contrastive_attr"][contr_idx][1:-1]
+
+        max_attr_idx = np.argmax(np.abs(clean_src_attr))
+
+        aligned_idx = []
+        for idx, i in enumerate(aligned.x2y.lengths):
+            if i == 0:
+                continue
+            aligned_idx.append(idx)
+
+        for idx, i in enumerate(aligned_idx):
+            if i == max_attr_idx:
+                all_pos_list.append(
+                    example[f"upos_tags_{src_col}"][aligned.x2y.data[idx]]
+                )
+
+    return all_pos_list
+
+
 def _get_contrastive_attr(
     example: dict,
     model: inseq.AttributionModel,

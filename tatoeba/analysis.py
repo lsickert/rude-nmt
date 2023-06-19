@@ -5,8 +5,30 @@ from datasets import Dataset
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from spacy.training import Alignment
+
+import inseq
 
 from . import preprocess
+
+ko_order = [
+    "hasoseoche",
+    "hasipsioche",
+    "haeyoche",
+    "haoche",
+    "hageche",
+    "haerache",
+    "haeche",
+    "underspecified",
+    "ambiguous",
+]
+
+de_order = [
+    "formal",
+    "informal",
+    "underspecified",
+    "ambiguous",
+]
 
 
 def get_one_word_sentences(
@@ -22,12 +44,16 @@ def get_one_word_sentences(
 def get_formality_plot(
     ds: Dataset,
     form_col: Union[list[str], str],
+    language: str,
     plt_name: Optional[str] = None,
     exclude_vals: Optional[list] = None,
     ax_annotate_vals: tuple = (0.16, 8000),
+    fig_size: tuple = (8,6),
+    width: float = 0.8,
     col_titles: Optional[list] = None,
     save: bool = True,
-    horizontal_x: bool = False,
+    x_rotation: Optional[int] = 90,
+    ax_annotated: bool = True,
 ) -> None:
     """plot the distribution of formality labels in the dataset"""
     df = ds.to_pandas()
@@ -35,29 +61,32 @@ def get_formality_plot(
     if isinstance(form_col, str):
         form_col = [form_col]
 
+    order = ko_order if language == "ko" else de_order
+
     for col in form_col:
-        df[col] = df[col].astype("category")
+        df[col] = df[col].astype(pd.CategoricalDtype(order, ordered=True))
 
         if exclude_vals is not None:
             df = df[~df[col].isin(exclude_vals)]
 
     rows = len(df.index)
-    ax = df[form_col].apply(pd.Series.value_counts).plot(kind="bar")
+    ax = df[form_col].apply(pd.Series.value_counts).loc[order].plot(kind="bar", width=width, figsize=fig_size)
     ax.set_ylabel("Number of Sentences")
     ax.set_ylim(0, len(df.index))
 
     if col_titles is not None:
         ax.legend(col_titles)
 
-    if horizontal_x:
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+    if x_rotation is not None:
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=x_rotation)
 
-    for p in ax.patches:
-        b = p.get_bbox()
-        ax.annotate(
-            f"{round(p.get_height() / rows * 100, 2)}%",
-            ((b.x0 + b.x1) / 2 - ax_annotate_vals[0], b.y1 + ax_annotate_vals[1]),
-        )
+    if ax_annotated:
+        for p in ax.patches:
+            b = p.get_bbox()
+            ax.annotate(
+                f"{round(p.get_height() / rows * 100, 2)}%",
+                ((b.x0 + b.x1) / 2 - ax_annotate_vals[0], b.y1 + ax_annotate_vals[1]),
+            )
 
     fig = ax.get_figure()
     if save:
@@ -81,13 +110,16 @@ def get_cross_formality_plot(
 ) -> None:
     """plot the cross-distribution of formality labels in the dataset"""
     df = ds.to_pandas()
-    df[form_col] = df[form_col].astype("category")
-    df[cross_col] = df[cross_col].astype("category")
+
+    df[form_col] = df[form_col].astype(pd.CategoricalDtype(ko_order, ordered=True))
+    df[cross_col] = df[cross_col].astype(pd.CategoricalDtype(de_order, ordered=True))
     if exclude_vals is not None:
         df = df[~df[form_col].isin(exclude_vals)]
         df = df[~df[cross_col].isin(exclude_vals)]
 
     cross_form = pd.crosstab(df[form_col], df[cross_col], normalize="index")
+
+    cross_form = cross_form.sort_values(by=[form_col], ascending=False)
 
     cross_form.plot(kind="barh", stacked=True)
     plt.xlabel("Percentage of sentences")
@@ -95,16 +127,16 @@ def get_cross_formality_plot(
         plt.ylabel(form_col_desc)
 
     if cross_col_desc is not None:
-        plt.legend(title=cross_col_desc)
+        plt.legend(title=cross_col_desc, loc="lower right")
 
     for n, x in enumerate([*cross_form.index.values]):
         previous_x_pos = -1
         for (proportion, x_loc) in zip(cross_form.loc[x], cross_form.loc[x].cumsum()):
-            x_pos = round((x_loc - proportion) + (proportion / label_x),1)
+            x_pos = round((x_loc - proportion) + (proportion / label_x), 1)
             if x_pos <= previous_x_pos:
                 x_pos += 0.1
             previous_x_pos = x_pos
-            prop_label = np.round(proportion*100, 1)
+            prop_label = np.round(proportion * 100, 1)
             if prop_label != 0.0:
                 plt.text(
                     x=x_pos,
@@ -115,3 +147,7 @@ def get_cross_formality_plot(
         if plt_name is None:
             plt_name = plot_title
         plt.savefig(f"./plots/{plt_name}.png", bbox_inches="tight")
+
+
+def get_contrastive_pos_plot():
+    pass
