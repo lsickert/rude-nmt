@@ -1,6 +1,5 @@
 """this module contains functions to generate translations through mbart50"""
 import os
-from statistics import fmean
 import torch
 
 # import torch.backends.mps as mps
@@ -33,7 +32,11 @@ LANG_COL_MAP = {
 
 
 def get_device() -> str:
-    """returns the torch device to use for the current system"""
+    """returns the torch device to use for the current system"
+
+    Returns:
+        str: the device to use
+    """
 
     if cuda.is_available() and cuda_back.is_built():
         return "cuda"
@@ -52,7 +55,20 @@ def translate_ds(
     add_metrics: bool = True,
     add_neural_metrics: bool = True,
 ) -> Dataset:
-    """translate the given dataset using the pretrained model"""
+    """translate the given dataset using the pretrained model
+
+    Args:
+        ds (Dataset): the dataset to translate
+        src_lang (str): the source language
+        trg_lang (str): the target language
+        batch_size (int, optional): the batch size to use. Defaults to 32.
+        force_regen (bool, optional): whether to force the regeneration of the dataset. Defaults to False.
+        add_metrics (bool, optional): whether to add statistical metrics. Defaults to True.
+        add_neural_metrics (bool, optional): whether to add neural metrics. Defaults to True.
+
+    Returns:
+        Dataset: the translated dataset
+    """
 
     # for testing
     # ds = ds.select(range(64))
@@ -144,7 +160,18 @@ def tokenize_data(
     tok_col: str,
     force_regen: bool = False,
 ) -> Dataset:
-    """tokenize the dataset using the given tokenizer"""
+    """tokenize the dataset using the given tokenizer
+
+    Args:
+        ds (Dataset): the dataset to tokenize
+        tokenizer (MBart50TokenizerFast): the tokenizer to use
+        batch_size (int): the batch size to use
+        tok_col (str): the column to tokenize
+        force_regen (bool, optional): whether to force the regeneration of the dataset. Defaults to False.
+
+    Returns:
+        Dataset: the tokenized dataset
+    """
 
     def tokenize_function(examples, tok_col: str):
         tokens = tokenizer(
@@ -176,7 +203,19 @@ def translate_data(
     trg_lang: str,
     device: str = "cpu",
 ) -> list:
-    """translate the given dataset using the given model and tokenizer"""
+    """translate the given dataset using the given model and tokenizer
+
+    Args:
+        model (MBartForConditionalGeneration): the model to use
+        tokenizer (MBart50TokenizerFast): the tokenizer to use
+        ds (Dataset): the dataset to translate
+        batch_size (int): the batch size to use
+        trg_lang (str): the target language
+        device (str, optional): the device to use. Defaults to "cpu".
+
+    Returns:
+        list: the translated sentences
+    """
 
     trans = []
 
@@ -216,7 +255,19 @@ def translate_data(
 def get_stat_metrics(
     example, hyp_col: str, ref_col: str, trg_lang: str, chrf_func: CHRF, bleu_func: BLEU
 ):
-    """get the BLEU and CHRF scores for the given example"""
+    """get the BLEU and CHRF scores for the given example
+
+    Args:
+        example (dict): the example to evaluate
+        hyp_col (str): the column containing the hypothesis
+        ref_col (str): the column containing the reference
+        trg_lang (str): the target language
+        chrf_func (CHRF): the CHRF scorer
+        bleu_func (BLEU): the BLEU scorer
+
+    Returns:
+        dict: the example with the scores added
+    """
 
     chrf_score = chrf_func.sentence_score(example[hyp_col], [example[ref_col]])
     bleu_score = bleu_func.sentence_score(example[hyp_col], [example[ref_col]])
@@ -228,7 +279,17 @@ def get_stat_metrics(
 
 
 def get_comet_format(example, src_col: str, hyp_col: str, ref_col: str):
-    """format the example for use with COMET"""
+    """format the example for use with COMET
+
+    Args:
+        example (dict): the example to format
+        src_col (str): the column containing the source
+        hyp_col (str): the column containing the hypothesis
+        ref_col (str): the column containing the reference
+
+    Returns:
+        dict: the formatted example
+    """
     com_sample = {
         "src": example[src_col],
         "mt": example[hyp_col],
@@ -241,7 +302,18 @@ def get_comet_format(example, src_col: str, hyp_col: str, ref_col: str):
 def get_translation_metrics(
     ds, src_col: str, ref_col: str, hyp_col: str, trg_lang: str
 ) -> dict:
-    """helper function to calculate the BLEU, chrF and COMET score for a subset of the full dataset"""
+    """helper function to calculate the BLEU, chrF and COMET score for a subset of the full dataset
+
+    Args:
+        ds (Dataset): the dataset to evaluate
+        src_col (str): the column containing the source
+        ref_col (str): the column containing the reference
+        hyp_col (str): the column containing the hypothesis
+        trg_lang (str): the target language
+
+    Returns:
+        dict: the scores
+    """
     bleu = BLEU(trg_lang=trg_lang)
     chrf = CHRF()
 
@@ -272,5 +344,5 @@ def get_translation_metrics(
     return {
         "bleu": corpus_bleu,
         "chrf": corpus_chrf,
-        "comet": round(comet_output["system_score"], 3)
+        "comet": round(comet_output["system_score"], 3),
     }

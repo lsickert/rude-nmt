@@ -23,7 +23,20 @@ def attribute_ds(
     attribute_target: bool = False,
     force_regen: bool = False,
 ) -> Dataset:
-    """attribute the dataset using the given attribution_method"""
+    """attribute the dataset using the given attribution_method
+
+    Args:
+        ds (Dataset): the dataset
+        src_lang (str): the source language
+        trg_lang (str): the target language
+        attribution_method (str): the attribution method to use
+        batch_size (int, optional): the batch size. Defaults to 32.
+        attribute_target (bool, optional): whether to attribute the target. Defaults to False.
+        force_regen (bool, optional): whether to force the regeneration of the dataset. Defaults to False.
+
+    Returns:
+        Dataset: the attributed dataset
+    """
 
     # for testing
     # ds = ds.select(range(64))
@@ -62,15 +75,28 @@ def attribute_ds(
 
 
 def attribute_samples(
-    samples,
+    samples: dict,
     model: inseq.AttributionModel,
     aggregator: AggregatorPipeline,
     src_lang: str,
     trg_lang: str,
     batch_size: int,
     attribute_target: bool = False,
-):
-    """attribute a batch of samples using the given model and aggregator"""
+) -> dict:
+    """attribute a batch of samples using the given model and aggregator
+
+    Args:
+        samples (dict): the samples
+        model (inseq.AttributionModel): the model
+        aggregator (AggregatorPipeline): the aggregator
+        src_lang (str): the source language
+        trg_lang (str): the target language
+        batch_size (int): the batch size
+        attribute_target (bool, optional): whether to attribute the target. Defaults to False.
+
+    Returns:
+        dict: the attributed samples
+    """
 
     attributions = model.attribute(
         input_texts=samples[LANG_COL_MAP[src_lang]],
@@ -103,7 +129,9 @@ def attribute_samples(
     return samples
 
 
-def align_tokenizations_to_spacy(example, split_col, spacy_col, alignment_col):
+def align_tokenizations_to_spacy(
+    example: dict, split_col: str, spacy_col: str, alignment_col: str
+):
     """align the feature-attribution tokenizations (whitespace-split) to the spacy tokenizations"""
     alignment = Alignment.from_strings(example[split_col].split(), example[spacy_col])
     aligned = []
@@ -115,7 +143,10 @@ def align_tokenizations_to_spacy(example, split_col, spacy_col, alignment_col):
     return aligned
 
 
-def map_align_tokenizations(example, split_col, spacy_col, alignment_col):
+def map_align_tokenizations(
+    example: dict, split_col: str, spacy_col: str, alignment_col: str
+):
+    """map the feature-attribution tokenizations (whitespace-split) to the spacy tokenizations for a single example"""
     example[f"{alignment_col}_aligned"] = align_tokenizations_to_spacy(
         example, split_col, spacy_col, alignment_col
     )
@@ -132,6 +163,21 @@ def get_avg_pos_attr(
     form_map_trg: str,
     attribute_col: str,
 ):
+    """get the average source sentence attribution per POS tag for the dataset
+
+    Args:
+        ds (Dataset): the dataset
+        split_col_src (str): the source sentence column (will be split by whitespace)
+        spacy_col_src (str): the source sentence column with spacy tokenization
+        pos_col_src (str): the source sentence column POS tags
+        split_col_trg (str): the target sentence column (will be split by whitespace)
+        spacy_col_trg (str): the target sentence column with spacy tokenizations
+        form_map_trg (str): the target sentence formality map
+        attribute_col (str): the column with the feature-attribution values
+
+    Returns:
+        dict: the average attribution per POS tag
+    """
     all_pos = {}
     form_tokens_per_sent = []
     with tqdm(total=len(ds), desc="getting avg pos attr") as pbar:
@@ -182,8 +228,22 @@ def perform_contrastive_attr(
     trg_lang: str,
     attribution_method: str,
     force_regen: bool = False,
-):
-    """perform contrastive attribution on the dataset"""
+) -> Dataset:
+    """perform contrastive attribution on the dataset
+
+    Args:
+        ds (Dataset): the dataset
+        source_col (str): the source column
+        target_col (str): the target column
+        contrast_col (str): the contrastive column
+        src_lang (str): the source language
+        trg_lang (str): the target language
+        attribution_method (str): the attribution method
+        force_regen (bool, optional): whether to force the regeneration of the dataset. Defaults to False.
+
+    Returns:
+        Dataset: the dataset with contrastive attribution
+    """
 
     model = inseq.load_model(
         "facebook/mbart-large-50-many-to-many-mmt",
@@ -219,7 +279,16 @@ def perform_contrastive_attr(
 
 
 def get_contr_pos_tag_attr(ds: Dataset, model: inseq.AttributionModel, src_col: str):
-    """retrieve the attribution per POS tag for the contrastive dataset"""
+    """retrieve the attribution per POS tag for the contrastive dataset
+
+    Args:
+        ds (Dataset): the dataset
+        model (inseq.AttributionModel): the model
+        src_col (str): the source column
+
+    Returns:
+        dict: the attribution per POS tag
+    """
     pos_attr = {}
 
     for example in ds:
@@ -271,6 +340,16 @@ def get_contr_pos_tag_attr(ds: Dataset, model: inseq.AttributionModel, src_col: 
 
 
 def get_max_contr_pos_tags(ds: Dataset, model: inseq.AttributionModel, src_col: str):
+    """retrieve the POS tags with the highest contrastive attribution per sample
+
+    Args:
+        ds (Dataset): the dataset
+        model (inseq.AttributionModel): the model
+        src_col (str): the source column
+
+    Returns:
+        list: the POS tags with the highest contrastive attribution
+    """
     all_pos_list = []
 
     for example in ds:
@@ -316,7 +395,18 @@ def _get_contrastive_attr(
     target_col: str,
     contrast_col: str,
 ) -> dict:
-    """perform contrastive attribution on the given example"""
+    """perform contrastive attribution on the given example
+
+    Args:
+        example (dict): the example
+        model (inseq.AttributionModel): the model
+        source_col (str): the source column
+        target_col (str): the target column
+        contrast_col (str): the contrastive column
+
+    Returns:
+        dict: the example with contrastive attribution
+    """
 
     contrast = model.encode(example[contrast_col], as_targets=True)
 
@@ -348,6 +438,18 @@ def _get_contrastive_attr(
 def _filter_sentences_for_contrast(
     example: dict, model: inseq.AttributionModel, target_col: str, contrast_col: str
 ) -> dict:
+    """filter the dataset for sentences that are different between the target and contrastive column
+
+    Args:
+        example (dict): the example
+        model (inseq.AttributionModel): the model
+        target_col (str): the target column
+        contrast_col (str): the contrastive column
+
+    Returns:
+        dict: the example
+    """
+
     formal = model.encode(example[target_col], as_targets=True)
     informal = model.encode(example[contrast_col], as_targets=True)
 

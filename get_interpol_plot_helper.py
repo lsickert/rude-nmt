@@ -3,101 +3,13 @@ helper function to create the interpolation plots for the attention attributions
 that can be run indendently of the main script
 """
 import json
-from typing import Optional
 from datasets import load_from_disk
 import inseq
 from inseq.utils.typing import TokenWithId
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
 from tqdm.auto import tqdm
 from iwslt import preprocess
 from tatoeba import DATA_FOLDER
-
-
-def create_interpolation_plot_single(
-    arr: np.ndarray,
-    plt_name: Optional[str] = "interpolation_plot",
-    plt_title: Optional[str] = None,
-    save: bool = False,
-) -> None:
-    """create a single interpolation plot"""
-
-    fig, ax = plt.subplots()
-
-    pcm = ax.pcolormesh(arr, vmin=0, vmax=1, cmap="Reds")
-
-    ax.set_xlabel("Generated Tokens")
-    ax.set_ylabel("Attributed Tokens")
-    if plt_title is not None:
-        ax.set_title(plt_title)
-
-    fig.colorbar(pcm, ax=ax, shrink=0.8, location="right", label="Attention Weight")
-
-    if save:
-        fig.savefig(plt_name, dpi=300, bbox_inches="tight")
-
-
-def create_interpolation_plot_multi(
-    plot_list: list,
-    plt_name: Optional[str] = "interpolation_plot",
-    save: bool = False,
-) -> None:
-    """create multiple interpolation plots"""
-
-    fig, ax = plt.subplots(4, 3, figsize=(8, 8), layout="constrained")
-
-    for col in range(3):
-        for row in range(4):
-            plot_id = row * 3 + col
-            pcm = ax[row, col].pcolormesh(
-                plot_list[plot_id]["merged_attributions"], vmin=0, vmax=1, cmap="Reds"
-            )
-
-            ax[row, col].set_xlabel("Generated Tokens")
-            ax[row, col].set_ylabel("Attributed Tokens")
-            ax[row, col].set_title(f"{plot_list[plot_id]['title']}")
-
-    fig.colorbar(
-        pcm, ax=ax[1:3, 2], shrink=0.4, location="right", label="Attention Weight"
-    )
-
-    # fig.tight_layout()
-
-    if save:
-        fig.savefig(plt_name)
-
-
-def format_attributions(
-    attr_list: list,
-    scale_size: Optional[tuple] = None,
-    scale_factor: Optional[float] = None,
-) -> np.ndarray:
-    """format the attributions for the interpolation plot"""
-
-    if scale_size is None:
-        x = np.ceil(np.mean([attr.size(0) for attr in attr_list])).astype(int)
-        y = np.ceil(np.mean([attr.size(1) for attr in attr_list])).astype(int)
-        scale_size = (x, y)
-
-    attr_list = [attr.unsqueeze(0).unsqueeze(0) for attr in attr_list]
-    scaled_attr = [
-        torch.nn.functional.interpolate(
-            attr, size=scale_size, mode="bicubic", align_corners=True
-        )
-        .squeeze(0)
-        .squeeze(0)
-        for attr in attr_list
-    ]
-
-    scaled = torch.stack(scaled_attr).mean(dim=0).numpy()
-
-    if scale_factor is not None:
-        scaled = scaled * scale_factor
-
-    arr = np.flip(scaled, axis=0)
-
-    return arr.tolist()
+from rude_nmt import analysis
 
 
 def format_sentence(target_sent: list[TokenWithId]) -> str:
@@ -220,7 +132,7 @@ if __name__ == "__main__":
                     )
                     pbar.update(1)
 
-            attr_merged = format_attributions(source_attr)
+            attr_merged = analysis.format_attributions(source_attr)
 
             attr_output = {
                 "title": combination[4],
@@ -228,7 +140,7 @@ if __name__ == "__main__":
                 "target_sents": target_sents,
             }
 
-            create_interpolation_plot_single(
+            analysis.create_interpolation_plot_single(
                 attr_merged,
                 plt_title=combination[4],
                 save=True,
@@ -237,11 +149,11 @@ if __name__ == "__main__":
 
             all_attr.append(attr_output)
 
-    create_interpolation_plot_multi(
+    analysis.create_interpolation_plot_multi(
         all_attr, save=True, plt_name="plots/interpolations.png"
     )
 
     attr_json = json.dumps(all_attr, indent=4)
 
-    with open("plots/interpolations.json", "w", encoding="utf-8") as f:
+    with open("interpolations.json", "w", encoding="utf-8") as f:
         f.write(attr_json)

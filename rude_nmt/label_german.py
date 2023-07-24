@@ -21,7 +21,16 @@ INFORMAL_RE = re.compile(
 def annotate_ds(
     ds: Dataset, rem_ambig: bool = False, force_regen: bool = False
 ) -> Dataset:
-    """annotate the German formality of a dataset"""
+    """annotate the German formality of a dataset
+    
+    Args:
+        ds (Dataset): the dataset to annotate
+        rem_ambig (bool, optional): whether to remove ambiguous examples. Defaults to False.
+        force_regen (bool, optional): whether to force regeneration of the cache files. Defaults to False.
+        
+    Returns:
+        Dataset: the annotated dataset
+    """
     print("##### Annotating German POS tags #####")
     ds = ds.map(
         get_pos_tags,
@@ -59,7 +68,14 @@ def annotate_ds(
 
 
 def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
-    """annotate the formality of a German sentence"""
+    """annotate the formality of a German sentence
+    
+    Args:
+        example (dict[str, Any]): the example to annotate
+        
+    Returns:
+        dict[str, Any]: the annotated example
+    """
     example = annotate_tv_formality_single(example)
 
     return example
@@ -69,6 +85,12 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     """
     annotate the formality of a German sentence by matching it through a regex
     based on the existence of the formality indicators of du (informal) and Sie (formal).
+    
+    Args:
+        example (dict[str, Any]): the example to annotate
+        
+    Returns:
+        dict[str, Any]: the annotated example
     """
 
     form = None
@@ -132,7 +154,15 @@ def annotate_tv_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
-    """get the POS tags of a German sentence"""
+    """get the POS tags of a German sentence
+    
+    Args:
+        examples (dict[str, list]): the examples to annotate
+        col (str): the column to annotate
+        
+    Returns:
+        dict[str, list]: the annotated examples
+    """
     spacy.prefer_gpu()
     nlp = spacy.load("de_dep_news_trf", disable=["lemmatizer"])
 
@@ -171,7 +201,14 @@ def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
 
 
 def get_sent_id(example: Doc) -> list:
-    """get the sentence index for each token"""
+    """get the sentence index for each token
+    
+    Args:
+        example (Doc): the example to annotate
+    
+    Returns:
+        list: the sentence index for each token
+    """
     if example.has_annotation("SENT_START"):
         return [sent_id for sent_id, sent in enumerate(example.sents) for token in sent]
     else:

@@ -26,7 +26,15 @@ _check_dir_exists(DATA_FOLDER)
 
 
 def get_tatoeba(url: str = TATOEBA_TAR, force: bool = False) -> None:
-    """download and extract the tatoeba dataset"""
+    """download and extract the tatoeba dataset
+
+    Args:
+        url (str, optional): the url to download the dataset from. Defaults to TATOEBA_TAR.
+        force (bool, optional): whether to force redownload. Defaults to False.
+
+    Returns:
+        None
+    """
     fpath = _download_file(url, force)
 
     if not fpath.exists() or force:
@@ -85,7 +93,14 @@ def get_tatoeba(url: str = TATOEBA_TAR, force: bool = False) -> None:
 
 
 def get_dataset(force_renew: bool = False) -> Dataset:
-    """get the processed tatoeba dataset."""
+    """get the processed tatoeba dataset.
+
+    Args:
+        force_renew (bool, optional): whether to force redownload. Defaults to False.
+
+    Returns:
+        Dataset: the dataset
+    """
     dataset = load_dataset(
         str(DATA_FOLDER),
         name="tatoeba",
@@ -112,7 +127,14 @@ def get_dataset(force_renew: bool = False) -> Dataset:
 
 
 def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
-    """get the subset with subtitle data from the train-split of the tatoeba-dataset"""
+    """get the subset with subtitle data from the train-split of the tatoeba-dataset
+
+    Args:
+        force_renew (bool, optional): whether to force redownload. Defaults to False.
+
+    Returns:
+        Dataset: the dataset
+    """
 
     subtitle_folder = DATA_FOLDER / "subtitles"
 
@@ -131,13 +153,18 @@ def get_subtitle_dataset(force_renew: bool = False) -> Dataset:
         )
 
         subtitle_set = subtitle_set.map(
-            _clean_examples, num_proc=os.cpu_count(), load_from_cache_file=not force_renew
+            _clean_examples,
+            num_proc=os.cpu_count(),
+            load_from_cache_file=not force_renew,
         )
 
-        subtitle_set = subtitle_set.cast_column("id", ClassLabel(num_classes=2, names=["TED", "OpenSubtitles"]))
+        subtitle_set = subtitle_set.cast_column(
+            "id", ClassLabel(num_classes=2, names=["TED", "OpenSubtitles"])
+        )
 
         subtitle_set = subtitle_set.filter(
-            lambda ex: len(ex["source"].split()) < 100 and len(ex["target"].split()) < 100,
+            lambda ex: len(ex["source"].split()) < 100
+            and len(ex["target"].split()) < 100,
             num_proc=os.cpu_count(),
             load_from_cache_file=not force_renew,
         )
@@ -172,7 +199,7 @@ def _clean_examples(example: dict[str, Any]) -> dict[str, Any]:
 
     if example["id"].startswith("TED"):
         example["id"] = "TED"
-    
+
     if example["id"].startswith("OpenSubtitles"):
         example["id"] = "OpenSubtitles"
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rude-nmt"
-version = "0.1.0"
+version = "1.0.0"
 description = ""
 authors = ["Ludwig Sickert <l.sickert@outlook.com>"]
 license = "MIT"

@@ -22,5 +22,3 @@ if __name__ == "__main__":
     print(f'BLEU: {scores["bleu"]}')
     print(f'CHRF: {scores["chrf"]}')
     print(f'COMET: {scores["comet"]}')
-
-

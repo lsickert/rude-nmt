@@ -64,7 +64,16 @@ UPOS_TAGS = ["VERB", "ADJ"]
 def annotate_ds(
     ds: Dataset, rem_ambig: bool = False, force_regen: bool = False
 ) -> Dataset:
-    """annotate the Korean formality of a dataset"""
+    """annotate the Korean formality of a dataset
+
+    Args:
+        ds (Dataset): the dataset to annotate
+        rem_ambig (bool, optional): whether to remove ambiguous examples. Defaults to False.
+        force_regen (bool, optional): whether to force regeneration of the cache files. Defaults to False.
+
+    Returns:
+        Dataset: the annotated dataset
+    """
     print("##### Annotating Korean POS tags #####")
     ds = ds.map(
         get_pos_tags,
@@ -105,6 +114,12 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
     """
     annotate the formality of a Korean sentence by matching it through a regex
     based on the endings of the main verb at the end of the sentence.
+
+    Args:
+        example (dict[str, Any]): the example to annotate
+
+    Returns:
+        dict[str, Any]: the annotated example
     """
 
     form = None
@@ -181,7 +196,14 @@ def annotate_formality_single(example: dict[str, Any]) -> dict[str, Any]:
 
 
 def is_hasoseoche(sent: str) -> bool:
-    """check if an example sentence is in hasoseoche formality"""
+    """check if an example sentence is in hasoseoche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in hasoseoche formality
+    """
     match = HASOSEOCHE_RE.search(sent)
     if match is not None:
         return True
@@ -190,7 +212,14 @@ def is_hasoseoche(sent: str) -> bool:
 
 
 def is_hasipsioche(sent: str) -> bool:
-    """check if an example sentence is in hasipsioche formality"""
+    """check if an example sentence is in hasipsioche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in hasipsioche formality
+    """
     match = HASIPSIOCHE_RE.search(sent)
     if match is not None:
         if match["declInd1"] is not None:
@@ -236,7 +265,14 @@ def is_hasipsioche(sent: str) -> bool:
 
 
 def is_haoche(sent: str) -> bool:
-    """check if an example sentence is in haoche formality"""
+    """check if an example sentence is in haoche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in haoche formality
+    """
     match = HAOCHE_RE.search(sent)
     if match is not None:
         if match["decExp"] is not None:
@@ -258,7 +294,14 @@ def is_haoche(sent: str) -> bool:
 
 
 def is_hageche(sent: str) -> bool:
-    """check if an example sentence is in hageche formality"""
+    """check if an example sentence is in hageche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in hageche formality
+    """
     match = HAGECHE_RE.search(sent)
     if match is not None:
         if match["decInt2"] is not None:
@@ -298,7 +341,14 @@ def is_hageche(sent: str) -> bool:
 
 
 def is_haerache(sent: str) -> bool:
-    """check if an example sentence is in haerache formality"""
+    """check if an example sentence is in haerache formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in haerache formality
+    """
     match = HAERACHE_RE.search(sent)
     if match is not None:
         if match["decInd"] is not None:
@@ -347,7 +397,14 @@ def is_haerache(sent: str) -> bool:
 
 
 def is_haeyoche(sent: str) -> bool:
-    """check if an example sentence is in haeyoche formality"""
+    """check if an example sentence is in haeyoche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in haeyoche formality
+    """
     match = HAEYOCHE_RE.search(sent)
     if match is not None:
         return True
@@ -356,7 +413,14 @@ def is_haeyoche(sent: str) -> bool:
 
 
 def is_haeche(sent: str) -> bool:
-    """check if an example sentence is in haeche formality"""
+    """check if an example sentence is in haeche formality
+
+    Args:
+        sent (str): the sentence to check
+
+    Returns:
+        bool: whether the sentence is in haeche formality
+    """
     match = HAECHE_RE.search(sent)
     if match is not None:
         if match["declNoAlt"] is not None:
@@ -425,7 +489,14 @@ FORM_FUNC_MAP = {
 
 # see e.g. https://en.wikipedia.org/wiki/Korean_language_and_computers#Hangul_in_Unicode on how hangul syllables and individual characters can be converted
 def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:
-    """separate a full korean syllable into its individual characters, otherwise return `None`"""
+    """separate a full korean syllable into its individual characters, otherwise return `None`
+
+    Args:
+        char (str): the syllable to separate
+
+    Returns:
+        Optional[Tuple[str, str, str]]: the separated syllable, or `None` if the input is not a valid korean syllable
+    """
     if is_hangul(char):
         no_off = ord(char) - U_KO_OFFSET
         initial = no_off // U_KO_INIT_OFFSET
@@ -439,7 +510,14 @@ def separate_syllable(char: str) -> Optional[Tuple[str, str, str]]:
 
 
 def is_korean_sent(sentence: Union[list, str], cutoff: float = 0.49) -> bool:
-    """determines if a sentence is Korean based on the ratio of words ending with hangul characters"""
+    """determines if a sentence is Korean based on the ratio of words ending with hangul characters
+
+    Args:
+        sentence (Union[list, str]): the sentence to check
+        cutoff (float, optional): the cutoff ratio for the minimal number of words ending with hangul characters. Defaults to 0.49.
+
+    Returns:
+        bool: whether the sentence is Korean"""
     han_count = 0
     if not isinstance(sentence, list):
         sentence = sentence.split()
@@ -458,12 +536,27 @@ def is_korean_sent(sentence: Union[list, str], cutoff: float = 0.49) -> bool:
 
 
 def is_hangul(char: str) -> bool:
-    """check if a character is within the unicode range for hangul characters"""
+    """check if a character is within the unicode range for hangul characters
+
+    Args:
+        char (str): the character to check
+
+    Returns:
+        bool: whether the character is a hangul character
+    """
     return U_HAN_START <= ord(char) <= U_HAN_END
 
 
 def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
-    """get the POS tags of a Korean sentence"""
+    """get the POS tags of a Korean sentence
+
+    Args:
+        examples (dict[str, list]): the examples to annotate
+        col (str): the column to annotate
+
+    Returns:
+        dict[str, list]: the annotated examples
+    """
 
     nlp = spacy.load("ko_core_news_lg", disable=["lemmatizer"])
 
@@ -502,7 +595,14 @@ def get_pos_tags(examples: dict[str, list], col: str) -> dict[str, list]:
 
 
 def get_sent_id(example: Doc) -> list:
-    """get the sentence index for each token"""
+    """get the sentence index for each token
+
+    Args:
+        example (Doc): the example to annotate
+
+    Returns:
+        list: the sentence index for each token
+    """
     if example.has_annotation("SENT_START"):
         return [sent_id for sent_id, sent in enumerate(example.sents) for token in sent]
     else:
