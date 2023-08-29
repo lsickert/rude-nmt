@@ -6,7 +6,7 @@ from datasets import load_from_disk
 import inseq
 import tatoeba
 import iwslt
-from rude_nmt import label_german, label_korean, translation, attribute
+from rude_nmt import label_german, label_korean, translation, attribute, fine_tune
 
 DATA = ["tatoeba", "iwslt"]
 LANGUAGES = ["de", "ko"]
@@ -62,6 +62,19 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--fine_tune",
+    action="store_true",
+    default=False,
+    help="Fine tune the model on the dataset",
+)
+
+parser.add_argument(
+    "--model_name",
+    type=str,
+    help="The name of the fine tuned model",
+)
+
+parser.add_argument(
     "--attribute",
     choices=inseq.list_feature_attribution_methods(),
     help="Attribute the dataset with the following method",
@@ -114,6 +127,18 @@ if __name__ == "__main__":
         if ds is None:
             tatoeba.preprocess.get_tatoeba(force=options.force_redownload)
             ds = tatoeba.preprocess.get_subtitle_dataset(options.force_regenerate)
+
+        if options.fine_tune:
+            if not options.model_name:
+                print("You must specify a model name to fine tune")
+                sys.exit(1)
+            fine_tune.fine_tune_model(
+                ds,
+                options.model_name,
+                options.src_lang,
+                options.trg_lang,
+                force_regen=options.force_regenerate,
+            )
 
         if options.translate:
 

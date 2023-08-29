@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from .translation import LANG_TAG_MAP, LANG_COL_MAP
+from . import LANG_TAG_MAP, LANG_COL_MAP
 
 
 def attribute_ds(
