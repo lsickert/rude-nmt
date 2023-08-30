@@ -53,7 +53,7 @@ def fine_tune_model(
     src_lang: str,
     trg_lang: str,
     base_model: Union[str, Path] = "facebook/mbart-large-50-many-to-many-mmt",
-    num_epochs: int = 3,
+    num_epochs: int = 5,
     batch_size: int = 8,
     force_regen: bool = False,
 ) -> Path:
@@ -158,13 +158,13 @@ def fine_tune_model(
         evaluation_strategy="epoch",
         save_strategy="epoch",
         save_total_limit=2,
-        learning_rate=3e-4,
+        learning_rate=5e-4,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=num_epochs,
         predict_with_generate=True,
         weight_decay=0.01,
-        use_mps_device=True,
+        #use_mps_device=True,
         optim="adamw_torch",
     )
 

@@ -17,5 +17,7 @@ module load PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
 
 # move the cached datasets to the /scratch directory so that we have more space available
 export HF_DATASETS_CACHE="/scratch/$USER/.cache/huggingface/datasets"
+export TRANSFORMERS_CACHE="/scratch/$USER/.cache/huggingface/transformers"
+export XDG_CACHE_HOME="/scratch/$USER/.cache"
 
 python -u get_scores_helper.py
