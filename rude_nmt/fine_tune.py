@@ -129,8 +129,8 @@ def fine_tune_model(
         bleu = BLEU(trg_lang=trg_lang)
         chrf = CHRF()
 
-        corpus_bleu = bleu.corpus_score(decoded_preds, decoded_labels).score
-        corpus_chrf = chrf.corpus_score(decoded_preds, decoded_labels).score
+        corpus_bleu = bleu.corpus_score(decoded_preds, [decoded_labels]).score
+        corpus_chrf = chrf.corpus_score(decoded_preds, [decoded_labels]).score
 
         len_mismatch = 0
         for pred, label in zip(decoded_preds, decoded_labels):
